@@ -1,0 +1,25 @@
+# a slurm and apptainer template for our hpc named cluster
+- scope: process
+  name: "deseq2_p1"
+  manager: "slurm"
+  manager_slurm: { "-p":"cluster,dedicated", "--mem":"20GB", "-t":"1:00:00", "-c":"8" }
+  environment: "apptainer"
+  container: "docker://ubuntu:24.04"
+
+- scope: process
+  name: "deseq2_p2"
+  manager: "slurm"
+  manager_slurm: { "-p":"cluster,dedicated", "--mem":"20GB", "-t":"1:00:00", "-c":"8" }
+  environment: "apptainer"
+  container: "docker://python:3.13-slim"
+
+- scope: process
+  name: "deseq2_p3"
+  manager: "slurm"
+  manager_slurm: { "-p":"cluster,dedicated", "--mem":"20GB", "-t":"1:00:00", "-c":"8" }
+  environment: "apptainer"
+  container: "docker://r-base:4.5.1"
+
+# - scope: global
+#   manager: "slurm"
+#   environment: "apptainer"

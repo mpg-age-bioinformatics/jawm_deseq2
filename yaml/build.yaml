@@ -1,0 +1,8 @@
+# this is an extra yaml that we require
+# when using our build machine
+- scope: global
+  automated_mount: False
+  docker_run_as_user: True
+  environment_docker:
+      "-v": ["/nexus:/nexus"]
+  parallel: False

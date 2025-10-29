@@ -1,0 +1,11 @@
+__pycache__
+logs
+test-input
+test-output
+.ipynb_checkpoints
+__init__.py
+modules/jawm_template
+.submodules
+# do this if you want to upload modules direclty
+# be aware you will loose git version information
+#submodules/*/.git

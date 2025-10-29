@@ -1,0 +1,24 @@
+# a docker yaml deseq2
+- scope: process
+  name: "deseq2_p1"
+  container: "ubuntu:24.04"
+  environment: "docker"
+  var:
+    extra_args: ""
+    my_deseq2_argument: "This is just a deseq2."
+
+- scope: process
+  name: "deseq2_p2"
+  container: "python:3.13-slim"
+  environment: "docker"
+  var:
+    map.file: "./test/data.txt"
+
+- scope: process
+  name: "deseq2_p3"
+  container: "r-base:4.5.1"
+  environment: "docker"
+
+- scope: global
+  var:
+    mk.output: "./test/test-output"

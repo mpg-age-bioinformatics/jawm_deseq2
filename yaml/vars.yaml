@@ -1,0 +1,14 @@
+- scope: process
+  name: "deseq2_p1"
+  var:
+    extra_args: ""
+    my_deseq2_argument: "This is just a deseq2."
+
+- scope: process
+  name: "deseq2_p2"
+  var:
+    map.file: "./test/data.txt"
+
+- scope: global
+  var:
+    mk.output: "./test/test-output"
