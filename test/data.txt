@@ -1,1 +1,2 @@
-13fb536154e7cf36a394d9b09ff99b7a  test.fastq.gz  https://ndownloader.figshare.com/files/57999445
+2a389d35ec101a96b3f65701ea6ec365  kallisto_output.tar.gz  https://ndownloader.figshare.com/ndownloader/files/59208242
+5f68863e7da7f935657967d8386faf22  caenorhabditis_elegans.115.no.rRNA.gtf.gz  https://ndownloader.figshare.com/ndownloader/files/59208497

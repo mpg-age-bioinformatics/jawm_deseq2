@@ -6,6 +6,7 @@ test-output
 __init__.py
 modules/jawm_template
 .submodules
+*.txt.tmp
 # do this if you want to upload modules direclty
 # be aware you will loose git version information
 #submodules/*/.git

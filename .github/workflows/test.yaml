@@ -2,13 +2,13 @@ name: Test
 
 on:
   workflow_dispatch:
-  push:
-    branches: ["main"]
-  pull_request:
-    branches: ["main"]
-  schedule:
-    # GitHub cron is UTC. 06:00 Berlin = 04:00 UTC in summer, 05:00 UTC in winter.
-    - cron: "30 4 * * *"
+  # push:
+  #   branches: ["main"]
+  # pull_request:
+  #   branches: ["main"]
+  # schedule:
+  #   # GitHub cron is UTC. 06:00 Berlin = 04:00 UTC in summer, 05:00 UTC in winter.
+  #   - cron: "30 4 * * *"
 
 jobs:
   build:

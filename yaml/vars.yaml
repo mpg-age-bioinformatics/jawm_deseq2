@@ -1,14 +1,52 @@
-- scope: process
-  name: "deseq2_p1"
-  var:
-    extra_args: ""
-    my_deseq2_argument: "This is just a deseq2."
-
-- scope: process
-  name: "deseq2_p2"
-  var:
-    map.file: "./test/data.txt"
-
 - scope: global
   var:
-    mk.output: "./test/test-output"
+    map.gtf: "./test/test-input/caenorhabditis_elegans.115.no.rRNA.gtf"
+    mk.project_folder: "./test/test-output/"
+    map.kallisto_output: "./test/test-input/kallisto_output/"
+    circRNA: "None"
+- scope: process
+  name: "annotations"
+  var:
+    biomart_dataset: "celegans_gene_ensembl"
+    biomart_host: "http://sep2025.archive.ensembl.org/biomart/"
+    biotypes_go: "./test/test-output/biotypes_go.txt"
+- scope: process
+  name: "parse_submission"
+  var:
+    samplestable: ""
+# - scope: process
+#   name: "tx2gene"
+# - scope: process
+#   name: "tx2gene_proc"
+# - scope: process
+#   name: "deseq2"
+#   # var:
+#     # input_file: ""
+# - scope: process
+#   name: "mastertable"
+# - scope: process
+#   name: "annotator"
+- scope: process
+  name: "david_proc"
+  var:
+    daviddatabase: "ENSEMBL_GENE_ID"
+    DAVIDUSER: "jorge.boucas@age.mpg.de"
+# - scope: process
+#   name: "topgo_proc"
+#   var:
+#     # input_file: ""
+- scope: process
+  name: "cellplot"
+  var:
+    # category: ""
+    filetype: "tsv"
+    # inFile: ""
+    nterms: "15"
+- scope: process
+  name: "string"
+  var:
+    biomart_host: "http://sep2025.archive.ensembl.org/biomart/"
+    cytoscape_host: ""
+    species: "caenorhabditis elegans"
+- scope: process
+  name: "upload_paths"
