@@ -4,6 +4,7 @@
     mk.project_folder: "./test/test-output/"
     map.kallisto_output: "./test/test-input/kallisto_output/"
     circRNA: "None"
+    cytoscape_host: "/nexus/posix0/MAGE-flaski/service/databases/cytoscape/cytoscape.ip"
 - scope: process
   name: "annotations"
   var:
@@ -14,6 +15,7 @@
   name: "parse_submission"
   var:
     samplestable: ""
+    read1_suffix: '.READ_1.fastq.gz'
 # - scope: process
 #   name: "tx2gene"
 # - scope: process
@@ -27,12 +29,12 @@
 # - scope: process
 #   name: "annotator"
 - scope: process
-  name: "david_proc"
+  name: "david"
   var:
     daviddatabase: "ENSEMBL_GENE_ID"
     DAVIDUSER: "jorge.boucas@age.mpg.de"
 # - scope: process
-#   name: "topgo_proc"
+#   name: "topgo"
 #   var:
 #     # input_file: ""
 - scope: process
@@ -43,10 +45,14 @@
     # inFile: ""
     nterms: "15"
 - scope: process
+  name: "rcistarget"
+  var:
+    rcis_db: ""
+
+- scope: process
   name: "string"
   var:
     biomart_host: "http://sep2025.archive.ensembl.org/biomart/"
-    cytoscape_host: ""
     species: "caenorhabditis elegans"
 - scope: process
   name: "upload_paths"
