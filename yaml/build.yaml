@@ -2,8 +2,8 @@
 # when using our build machine
 - scope: global
   environment: "docker"
-  automated_mount: False
+  parallel: False
   docker_run_as_user: True
+  automated_mount: False
   environment_docker:
       "-v": ["/nexus:/nexus"]
-  parallel: False

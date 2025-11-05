@@ -7,5 +7,7 @@
   manager_slurm: { "-p":"cluster,dedicated" }
 
 - scope: process
-  name: [ "get_ip", "release_ip" ]
+  name:
+    - get_ip
+    - release_ip
   manager: local

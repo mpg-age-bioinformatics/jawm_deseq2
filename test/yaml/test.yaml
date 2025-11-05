@@ -1,31 +1,46 @@
-- scope: process
-  name: "deseq2_p1"
-  container: "ubuntu:24.04"
+- scope: global
   environment: "docker"
+  parallel: False
   var:
-    extra_args: ""
-    my_deseq2_argument: "This is just an example."
-    mk.output: "./test/test-output"
-
+    map.gtf: "./test/test-input/caenorhabditis_elegans.115.no.rRNA.gtf"
+    mk.project_folder: "./test/test-output/"
+    map.kallisto_output: "./test/test-input/kallisto_output/"
+    circRNA: "None"
+    cytoscape_host: ""
 - scope: process
-  name: "deseq2_p2"
-  container: "python:3.13-slim"
-  environment: "docker"
+  name: "annotations"
   var:
-    map.file: "./test/data.txt"
-    mk.output: "./test/test-output"
-
+    biomart_dataset: "celegans_gene_ensembl"
+    biomart_host: "http://sep2025.archive.ensembl.org/biomart/"
+    biotypes_go: "./test/test-output/biotypes_go.txt"
 - scope: process
-  name: "deseq2_p3"
-  container: "r-base:4.5.1"
-  environment: "docker"
+  name: "parse_submission"
   var:
-    mk.output: "./test/test-output"
+    samplestable: ""
+    read1_suffix: '.READ_1.fastq.gz'
+- scope: process
+  name: "david"
+  var:
+    daviddatabase: "ENSEMBL_GENE_ID"
+    DAVIDUSER: ""
+- scope: process
+  name: "cellplot"
+  var:
+    filetype: "tsv"
+    nterms: "15"
+- scope: process
+  name: "rcistarget"
+  var:
+    rcis_db: ""
+- scope: process
+  name: "string"
+  var:
+    biomart_host: "http://sep2025.archive.ensembl.org/biomart/"
+    species: "caenorhabditis elegans"
 
-# - scope: global
-#   var:
-#     mk.output: "./test/test-output"
- 
 - scope: hash
-  include: ./test/test-output/deseq2.txt
+  include: 
+    - ./test/test-output/deseq2_output/group_N2_treated_vs_daf2.results.tsv
+    - ./test/test-output/deseq2_output/annotated/group_N2_vs_daf2_treated.results.xlsx
+    - ./test/test-output/deseq2_output/annotated/group_N2_treated_vs_N2.topGO.tsv
   overwrite: true # overwrite any existing hash already present on the logs folder

@@ -25,11 +25,11 @@ if "{{biomart_host}}" != "None":
             response=response.content.decode().split("\\n")
             response=[s.split("\\t") for s in response ]
             bio_go=pd.DataFrame(response,columns=attributes)
-            bio_go.to_csv("{{biotypes_go}}".replace("biotypes_go.txt", "biotypes_go_raw_topgo.txt"), index=None, sep="\t")
-            bio_go.to_csv("{{project_folder}}/deseq2_output/annotated/biotypes_go_raw_topgo.txt", index=None, sep="\t")
+            bio_go.to_csv("{{biotypes_go}}".replace("biotypes_go.txt", "biotypes_go_raw_topgo.txt"), index=None, sep="\\t")
+            bio_go.to_csv("{{project_folder}}/deseq2_output/annotated/biotypes_go_raw_topgo.txt", index=None, sep="\\t")
             bio_go=bio_go[["ensembl_gene_id","go_id","name_1006"]]
-            bio_go.to_csv("{{biotypes_go}}".replace("biotypes_go.txt", "biotypes_go_raw.txt"), index=None, sep="\t")
-            bio_go.to_csv("{{project_folder}}/deseq2_output/annotated/biotypes_go_raw.txt", index=None, sep="\t")
+            bio_go.to_csv("{{biotypes_go}}".replace("biotypes_go.txt", "biotypes_go_raw.txt"), index=None, sep="\\t")
+            bio_go.to_csv("{{project_folder}}/deseq2_output/annotated/biotypes_go_raw.txt", index=None, sep="\\t")
             bio_go.columns = ["ensembl_gene_id","GO_id","GO_term"]
             def CombineAnn(df):
                 return pd.Series(dict(ensembl_gene_id = "; ".join([ str(s) for s in list(set(df["ensembl_gene_id"]))  if str(s) != "nan" ] ) ,\
@@ -44,7 +44,7 @@ if "{{biomart_host}}" != "None":
             GTF["gene_biotype"]=age.retrieve_GTF_field(field="gene_biotype",gtf=GTF)
             GTF=GTF[["gene_id","gene_biotype"]].drop_duplicates()
             GTF.columns=["ensembl_gene_id","gene_biotype"]
-            bio_go=pd.merge(GTF,bio_go,on=["ensembl_gene_id"],how="outer"
+            bio_go=pd.merge(GTF,bio_go,on=["ensembl_gene_id"],how="outer")
             bio_go.to_csv("{{project_folder}}/deseq2_output/annotated/biotypes_go.txt", sep= "\\t", index=None)
             bio_go.to_csv("{{biotypes_go}}", sep= "\\t", index=None)
         except Exception as e:
@@ -84,22 +84,22 @@ if os.path.isfile(sfile):
     sdf=pd.read_excel(sfile)
 
 elif os.path.isdir("{{kallisto_output}}"):
+    print("Could not find a samples table of the form `pd.DataFrame(columns=['Files/Folders','group'])`")
+    print("Workinf on predefined / expected kallisto output to generate test comparisons.")
     folders=os.listdir("{{kallisto_output}}")
     folders=[ s for s in folders if os.path.isdir(f"{{kallisto_output}}/{s}") ]
     folders=[ s for s in folders if not s.startswith("tmp.") ]
     folders=[ s for s in folders if ".Rep_" in s ]
     if not folders :
-        raise Exception("Could not find a samples table of the form `pd.DataFrame(columns=["Files/Folders","group"])` nor a kallisto folder with Replicate information eg. <group>.Rep_<number> in it's sub folder names")
+        raise Exception("Could not find a samples table of the form `pd.DataFrame(columns=['Files/Folders','group'])` nor a kallisto folder with Replicate information eg. <group>.Rep_<number> in it's sub folder names")
     groups=[ s.split(".Rep_")[0] for s in folders ]
     sdf=pd.DataFrame( { "Files/Folders":folders , "group":groups } )
 
-print(sdf)
 sam_df=sdf.copy()
 files_col=sam_df.columns.tolist()[0]
 cond_col=sam_df.columns.tolist()[1]
 sam_df.index=[s.split("{{read1_suffix}}")[0] for s in sam_df[files_col].tolist()]
 sam_df=sam_df[[cond_col]]
-# print(sam_df)
 sam_df.to_csv("{{project_folder}}/deseq2_output/samples_MasterTable.txt", sep="\t")
 fs=sdf.columns.tolist()[0]
 sdf[fs]=sdf[fs].apply(lambda x: x.split("{{read1_suffix}}")[0] )
@@ -115,7 +115,6 @@ for c in mods:
                 interactions.append(c)
 single_models=cols
 textout=[]
-print(single_models)
 for m in single_models:
     variants=[ s for s in cols if s != m ] 
     tmp=sdf.copy()
@@ -155,7 +154,7 @@ with open("{{project_folder}}/deseq2_output/models.txt", "w") as mout:
         "read1_suffix":""
     },
     container="mpgagebioinformatics/rnaseq.python:3.8-8",
-    manager_slurm={ "-c": 1, "--mem": "4GB", "-t": "1h" }
+    manager_slurm={ "-c": 1, "--mem": "4GB", "-t": "1:00:00" }
 )
 
 tx2gene=jawm.Process(
@@ -179,7 +178,7 @@ tx2gene[["TXNAME","GENEID"]].to_csv("{{project_folder}}/deseq2_output/tx2gene.cs
         "project_folder":"", 
     },
     container="mpgagebioinformatics/rnaseq.python:3.8-8",
-    manager_slurm={ "-c": 1, "--mem": "4GB", "-t": "1h" }
+    manager_slurm={ "-c": 1, "--mem": "4GB", "-t": "1:00:00" }
 )
 
 
@@ -447,7 +446,7 @@ mt_ann.to_excel("{{project_folder}}/deseq2_output/annotated/masterTable_annotate
 
 david=jawm.Process(
     name="david",
-    when=lambda p:  ( not os.path.isfile( os.path.join( p.var["project_folder"], "deseq2_output" , "annotated", "david.touch" ) ) &  ( p.var["DAVIDUSER"] != "" ) ) ,
+    when=lambda p: (  ( not os.path.isfile( os.path.join( p.var["project_folder"], "deseq2_output" , "annotated", "david.touch" ) ) )  &  ( p.var["DAVIDUSER"] != "" ) ) ,
     script="""\
 #!/usr/local/bin/python
 import pandas as pd
@@ -773,7 +772,7 @@ file.create(tmp_name)
 
 rcistarget=jawm.Process(
     name="rcistarget",
-    when=lambda p: not os.path.isfile( os.path.join( p.var["project_folder"], "deseq2_output" , "annotated", p.var["input_file"].replace( ".results.tsv", ".RcisTarget.xlsx")  ) ),
+    when=lambda p: ( not os.path.isfile( os.path.join( p.var["project_folder"], "deseq2_output" , "annotated", p.var["input_file"].replace( ".results.tsv", ".RcisTarget.xlsx")  ) ) &  ( p.var["rcis_db"] != "" ) ),
     script="""\
 #!/usr/bin/Rscript
 library(RcisTarget)
@@ -870,7 +869,7 @@ QC_plots -o {{project_folder}}/qc_plots/ -de {{project_folder}}/deseq2_output/ -
 
 get_ip=jawm.Process(
     name="get_ip",
-    when=lambda p: not os.path.isfile( os.path.join( p.var["project_folder"], "deseq2_output" , "annotated", "string.done"  ) ) ,
+    when=lambda p: ( not os.path.isfile( os.path.join( p.var["project_folder"], "deseq2_output" , "annotated", "string.done"  ) ) &  ( p.var["cytoscape_host"] != "" ) ) ,
     script="""\
 #!/bin/bash
 while [[ ! -f {{cytoscape_host}} ]] ; do 
@@ -890,7 +889,7 @@ touch {{project_folder}}/deseq2_output/annotated/string.running
 
 string=jawm.Process(
     name="string",
-    when=lambda p: not os.path.isfile( os.path.join( p.var["project_folder"], "deseq2_output" , "annotated", "string.done"  ) ),
+    when=lambda p: ( not os.path.isfile( os.path.join( p.var["project_folder"], "deseq2_output" , "annotated", "string.done"  ) ) &  ( p.var["cytoscape_host"] != "" ) ),
     script="""\
 #!/usr/local/bin/python
 import pandas as pd
@@ -1136,7 +1135,7 @@ file_path.touch()
 
 release_ip=jawm.Process(
     name="release_ip",
-    when=lambda p: os.path.isfile( os.path.join( p.var["project_folder"], "deseq2_output" , "annotated", "string.running"  ) ),
+    when=lambda p: ( os.path.isfile( os.path.join( p.var["project_folder"], "deseq2_output" , "annotated", "string.running"  ) ) &  ( p.var["cytoscape_host"] != "" ) ),
     script="""\
 #!/bin/bash
 if [[ -f {{cytoscape_host}}_inuse ]] ; then mv {{cytoscape_host}}_inuse {{cytoscape_host}} ; fi
@@ -1186,8 +1185,6 @@ for f in $(ls *.* | grep -v upload.txt) ; do echo "qc_plots $(readlink -f ${f})"
 
 uniq upload.txt_ upload.txt 
 rm upload.txt_
-
-
 """,
     desc={
         "project_folder": ""
@@ -1259,16 +1256,13 @@ if __name__ == "__main__":
             cellplot_=cellplot.clone()
 
             cellplot_.var["map.inFile"]=file
-            # cellplot_.var["inFile"]=file
-
-            cellplot_.var["filetype"]="tsv"
+            # cellplot_.var["inFile"]=file # to be removed
             cellplot_.var["category"]="GOTERM_BP_FAT"
-            cellplot_.var["nterms"]="15"
 
             cellplot__=cellplot_.clone()
             cellplot__.var["category"]="KEGG_PATHWAY"
-            # cellplot__.var["inFile"]=file
-
+            # cellplot__.var["map.inFile"]=file # to be removed
+            # cellplot__.var["inFile"]=file # to be removed
 
             cellplot_.execute()
             cellplot__.execute()
@@ -1276,17 +1270,13 @@ if __name__ == "__main__":
             cellplot_jobs.append( cellplot_.hash )
             cellplot_jobs.append( cellplot__.hash )
 
-        print(cellplot__.var)
-
         for file in togo_files:
 
             cellplot_=cellplot.clone()
 
             cellplot_.var["map.inFile"]=file
-            # cellplot_.var["inFile"]=file
-            cellplot_.var["filetype"]="tsv"
+            # cellplot_.var["inFile"]=file # to be removed
             cellplot_.var["category"]="GOTERM_BP"
-            cellplot_.var["nterms"]="15"
             cellplot_.execute()
 
             cellplot_jobs.append( cellplot_.hash )
