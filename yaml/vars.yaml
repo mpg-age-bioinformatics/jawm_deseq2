@@ -16,33 +16,15 @@
   var:
     samplestable: ""
     read1_suffix: '.READ_1.fastq.gz'
-# - scope: process
-#   name: "tx2gene"
-# - scope: process
-#   name: "tx2gene_proc"
-# - scope: process
-#   name: "deseq2"
-#   # var:
-#     # input_file: ""
-# - scope: process
-#   name: "mastertable"
-# - scope: process
-#   name: "annotator"
 - scope: process
   name: "david"
   var:
     daviddatabase: "ENSEMBL_GENE_ID"
-    DAVIDUSER: "jorge.boucas@age.mpg.de"
-# - scope: process
-#   name: "topgo"
-#   var:
-#     # input_file: ""
+    DAVIDUSER: ""
 - scope: process
   name: "cellplot"
   var:
-    # category: ""
     filetype: "tsv"
-    # inFile: ""
     nterms: "15"
 - scope: process
   name: "rcistarget"

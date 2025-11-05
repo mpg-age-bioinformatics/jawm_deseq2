@@ -204,7 +204,7 @@ sessionInfo()
         "project_folder":""
     },
     container="mpgagebioinformatics/deseq2:1.38.0",
-    manager_slurm={ "-c": 1, "--mem": "10GB", "-t": "1h" }
+    manager_slurm={ "-c": 1, "--mem": "10GB", "-t": "1:00:00" }
 )
 
 deseq2=jawm.Process(
