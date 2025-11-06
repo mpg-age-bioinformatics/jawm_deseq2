@@ -33,26 +33,49 @@ if "{{biomart_host}}" != "None":
             bio_go.to_csv("{{project_folder}}/deseq2_output/annotated/biotypes_go_raw.txt", index=None, sep="\\t")
             bio_go.columns = ["ensembl_gene_id","GO_id","GO_term"]
             bio_go=bio_go.sort_values(by=["ensembl_gene_id","GO_id"], ascending=True )
+
+            def join_sorted_unique(series):
+                # drop NaNs, cast to str once, dedup while preserving first-seen order, then sort for full determinism
+                vals = pd.Series(series).dropna().astype(str).unique()   # preserves first appearance
+                # vals = sorted(vals)                                      # or omit this line if you prefer original order
+                return "; ".join(vals)
+
             def CombineAnn(df):
-                return pd.Series(dict(ensembl_gene_id = "; ".join([ str(s) for s in list(set(df["ensembl_gene_id"]))  if str(s) != "nan" ] ) ,\
-                                GO_id = "; ".join([ str(s) for s in list(set(df["GO_id"])) if str(s) != "nan" ] ) ,\
-                                GO_term = "; ".join([ str(s) for s in list(set(df["GO_term"])) if str(s) != "nan" ] ) ,\
+                return pd.Series(dict(ensembl_gene_id = ("ensembl_gene_id", join_sorted_unique) ,\
+                                GO_id = ("GO_id", join_sorted_unique) ,\
+                                GO_term = ("GO_term", join_sorted_unique)  ,\
                                 ) )
-            bio_go=bio_go.groupby(by="ensembl_gene_id", as_index=False).apply(CombineAnn)
-            bio_go.reset_index(inplace=True, drop=True)
+
+            bio_go = (
+                bio_go.groupby("ensembl_gene_id", sort=False)
+                    .agg(
+                        ensembl_gene_id=("ensembl_gene_id", "first"),
+                        GO_id=("GO_id", join_sorted_unique),
+                        GO_term=("GO_term", join_sorted_unique),
+                    )
+                    .reset_index(drop=True)
+                    # ensure column order
+                    [["ensembl_gene_id","GO_id","GO_term"]]
+            )
+
+            bio_go=bio_go.dropna(subset=["ensembl_gene_id"])
 
             GTF=age.readGTF("{{gtf}}")
             GTF["gene_id"]=age.retrieve_GTF_field(field="gene_id",gtf=GTF)
             GTF["gene_biotype"]=age.retrieve_GTF_field(field="gene_biotype",gtf=GTF)
-            GTF=GTF[["gene_id","gene_biotype"]].drop_duplicates()
+            GTF=GTF[["gene_id","gene_biotype"]].drop_duplicates().dropna(subset=["gene_id"])
             GTF.columns=["ensembl_gene_id","gene_biotype"]
+            GTF=GTF.astype(str)
+            bio_go=bio_go.astype(str)
             bio_go=pd.merge(GTF,bio_go,on=["ensembl_gene_id"],how="outer")
             bio_go=bio_go.sort_values(by=["ensembl_gene_id"],ascending=True)
             bio_go.to_csv("{{project_folder}}/deseq2_output/annotated/biotypes_go.txt", sep= "\\t", index=None)
             bio_go.to_csv("{{biotypes_go}}", sep= "\\t", index=None)
+
         except Exception as e:
             print("An error occurred:", e,"\\ncontinuing without biomart go annotations.")
             bio_go=pd.DataFrame(columns=["ensembl_gene_id"])         
+
     else:
         shutil.copy( "{{biotypes_go}}".replace("biotypes_go.txt", "biotypes_go_raw_topgo.txt"), "{{project_folder}}/deseq2_output/annotated/biotypes_go_raw_topgo.txt" )
         shutil.copy( "{{biotypes_go}}".replace("biotypes_go.txt", "biotypes_go_raw.txt"), "{{project_folder}}/deseq2_output/annotated/biotypes_go_raw.txt" )
@@ -1258,13 +1281,10 @@ if __name__ == "__main__":
             cellplot_=cellplot.clone()
 
             cellplot_.var["map.inFile"]=file
-            # cellplot_.var["inFile"]=file # to be removed
             cellplot_.var["category"]="GOTERM_BP_FAT"
 
             cellplot__=cellplot_.clone()
             cellplot__.var["category"]="KEGG_PATHWAY"
-            # cellplot__.var["map.inFile"]=file # to be removed
-            # cellplot__.var["inFile"]=file # to be removed
 
             cellplot_.execute()
             cellplot__.execute()
@@ -1277,7 +1297,6 @@ if __name__ == "__main__":
             cellplot_=cellplot.clone()
 
             cellplot_.var["map.inFile"]=file
-            # cellplot_.var["inFile"]=file # to be removed
             cellplot_.var["category"]="GOTERM_BP"
             cellplot_.execute()
 

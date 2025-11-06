@@ -1,2 +1,2 @@
 #jawm_file.py;workflow;parameters.file1.yaml,parameters.file2.yaml;"Test name";test_hash
-deseq2.py;test;./test/yaml/test.yaml;"Main workflow test";2a7a4073ba8b578b5e78fda34ff57c1e5d390aa841c9a2bf3c08617ee3bde904
+deseq2.py;test;./test/yaml/test.yaml;"Main workflow test";f64b026f16502b60d91958a1314f99f0fdd777b9370a003968ffa1169650a594
