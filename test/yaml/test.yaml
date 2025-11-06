@@ -41,6 +41,6 @@
 - scope: hash
   include: 
     - ./test/test-output/deseq2_output/group_N2_treated_vs_daf2.results.tsv
-    - ./test/test-output/deseq2_output/annotated/group_N2_vs_daf2_treated.results.xlsx
+    - ./test/test-output/deseq2_output/annotated/group_N2_vs_daf2_treated.results.tsv
     - ./test/test-output/deseq2_output/annotated/group_N2_treated_vs_N2.topGO.tsv
   overwrite: true # overwrite any existing hash already present on the logs folder

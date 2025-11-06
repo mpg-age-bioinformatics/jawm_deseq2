@@ -25,12 +25,14 @@ if "{{biomart_host}}" != "None":
             response=response.content.decode().split("\\n")
             response=[s.split("\\t") for s in response ]
             bio_go=pd.DataFrame(response,columns=attributes)
+            bio_go=bio_go.sort_values(by=attributes, ascending=True )
             bio_go.to_csv("{{biotypes_go}}".replace("biotypes_go.txt", "biotypes_go_raw_topgo.txt"), index=None, sep="\\t")
             bio_go.to_csv("{{project_folder}}/deseq2_output/annotated/biotypes_go_raw_topgo.txt", index=None, sep="\\t")
             bio_go=bio_go[["ensembl_gene_id","go_id","name_1006"]]
             bio_go.to_csv("{{biotypes_go}}".replace("biotypes_go.txt", "biotypes_go_raw.txt"), index=None, sep="\\t")
             bio_go.to_csv("{{project_folder}}/deseq2_output/annotated/biotypes_go_raw.txt", index=None, sep="\\t")
             bio_go.columns = ["ensembl_gene_id","GO_id","GO_term"]
+            bio_go=bio_go.sort_values(by=["ensembl_gene_id","GO_id"], ascending=True )
             def CombineAnn(df):
                 return pd.Series(dict(ensembl_gene_id = "; ".join([ str(s) for s in list(set(df["ensembl_gene_id"]))  if str(s) != "nan" ] ) ,\
                                 GO_id = "; ".join([ str(s) for s in list(set(df["GO_id"])) if str(s) != "nan" ] ) ,\
@@ -45,6 +47,7 @@ if "{{biomart_host}}" != "None":
             GTF=GTF[["gene_id","gene_biotype"]].drop_duplicates()
             GTF.columns=["ensembl_gene_id","gene_biotype"]
             bio_go=pd.merge(GTF,bio_go,on=["ensembl_gene_id"],how="outer")
+            bio_go=bio_go.sort_values(by=["ensembl_gene_id"],ascending=True)
             bio_go.to_csv("{{project_folder}}/deseq2_output/annotated/biotypes_go.txt", sep= "\\t", index=None)
             bio_go.to_csv("{{biotypes_go}}", sep= "\\t", index=None)
         except Exception as e:
@@ -636,11 +639,10 @@ if ( length(levels(geneList)) > 1) {
     manager_slurm={ "-c": 1, "--mem": "8GB", "-t": "4:00:00" }
 )
 
-## keep on here
-
 cellplot=jawm.Process(
     name="cellplot",
-    when=lambda p: not os.path.isfile( os.path.join( p.var["project_folder"], "deseq2_output" , "annotated", p.var["inFile"].split( p.var["filetype"] )[0] )+p.var["category"]+".cellplot.pdf_"  ) ,
+    when=lambda p: ( not os.path.isfile( os.path.join( p.var["project_folder"], "deseq2_output" , "annotated", p.var["inFile"].split( p.var["filetype"] )[0] )+p.var["category"]+".cellplot.pdf"  ) ) & \
+                   ( not os.path.isfile( os.path.join( p.var["project_folder"], "deseq2_output" , "annotated", p.var["inFile"].split( p.var["filetype"] )[0] )+p.var["category"]+".cellplot.touch" ) ) ,
     script="""\
 #!/usr/bin/Rscript
 
@@ -674,7 +676,7 @@ nterms <- as.numeric("{{nterms}}")
 
 filetype_map <- c("xlsx" = 'xlsx',  'tsv' = '\t', 'csv' = ',', 'txt'=" ")
 
-tmp_name=gsub(filetype, paste(category, '.cellplot.pdf_', sep = ''), inFile)
+tmp_name=gsub(filetype, paste(category, '.cellplot.touch', sep = ''), inFile)
 
 
 if(filetype == 'xlsx'){
