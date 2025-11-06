@@ -1323,6 +1323,8 @@ if __name__ == "__main__":
 
     if workflow("test", workflows):
 
+        print(os.listdir("/home/runner/work/jawm_deseq2/jawm_deseq2/test/test-output/deseq2_output/annotated/"))
+
         with open(os.path.join(var["project_folder"], "test.txt"), 'w') as out:
             out.write("Test completed.")
 
