@@ -118,6 +118,7 @@ elif os.path.isdir("{{kallisto_output}}"):
     folders=[ s for s in folders if ".Rep_" in s ]
     if not folders :
         raise Exception("Could not find a samples table of the form `pd.DataFrame(columns=['Files/Folders','group'])` nor a kallisto folder with Replicate information eg. <group>.Rep_<number> in it's sub folder names")
+    folders.sort()
     groups=[ s.split(".Rep_")[0] for s in folders ]
     sdf=pd.DataFrame( { "Files/Folders":folders , "group":groups } )
 
@@ -1322,8 +1323,6 @@ if __name__ == "__main__":
     jawm.Process.wait()
 
     if workflow("test", workflows):
-
-        print(os.listdir("/home/runner/work/jawm_deseq2/jawm_deseq2/test/test-output/deseq2_output/annotated/"))
 
         with open(os.path.join(var["project_folder"], "test.txt"), 'w') as out:
             out.write("Test completed.")
