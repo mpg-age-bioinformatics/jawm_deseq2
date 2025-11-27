@@ -3,7 +3,7 @@
   parallel: False
   var:
     map.gtf: "./test/test-input/caenorhabditis_elegans.115.no.rRNA.gtf"
-    mk.project_folder: "./test/test-output/"
+    mk.deseq2_output: "./test/test-output/deseq2_output/"
     map.kallisto_output: "./test/test-input/kallisto_output/"
     circRNA: "None"
     cytoscape_host: ""

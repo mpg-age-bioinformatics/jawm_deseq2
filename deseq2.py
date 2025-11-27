@@ -3,7 +3,7 @@ import os
 
 annotations=jawm.Process(
     name="annotations",
-    when=lambda p: not os.path.isfile( os.path.join( p.var["project_folder"], "deseq2_output" ,"annotated",  "biotypes_go.txt") ) ,
+    when=lambda p: not os.path.isfile( os.path.join( p.var["deseq2_output"],"annotated",  "biotypes_go.txt") ) ,
     script="""\
 #!/usr/local/bin/python
 import pandas as pd
@@ -11,8 +11,8 @@ import os
 import AGEpy as age
 import shutil
 
-if not os.path.isdir("{{project_folder}}/deseq2_output/annotated/") :
-    os.makedirs("{{project_folder}}/deseq2_output/annotated/")
+if not os.path.isdir("{{deseq2_output}}/annotated/") :
+    os.makedirs("{{deseq2_output}}/annotated/")
 
 if "{{biomart_host}}" != "None":
     if not os.path.isfile("{{biotypes_go}}"):
@@ -27,10 +27,10 @@ if "{{biomart_host}}" != "None":
             bio_go=pd.DataFrame(response,columns=attributes)
             bio_go=bio_go.sort_values(by=attributes, ascending=True )
             bio_go.to_csv("{{biotypes_go}}".replace("biotypes_go.txt", "biotypes_go_raw_topgo.txt"), index=None, sep="\\t")
-            bio_go.to_csv("{{project_folder}}/deseq2_output/annotated/biotypes_go_raw_topgo.txt", index=None, sep="\\t")
+            bio_go.to_csv("{{deseq2_output}}/annotated/biotypes_go_raw_topgo.txt", index=None, sep="\\t")
             bio_go=bio_go[["ensembl_gene_id","go_id","name_1006"]]
             bio_go.to_csv("{{biotypes_go}}".replace("biotypes_go.txt", "biotypes_go_raw.txt"), index=None, sep="\\t")
-            bio_go.to_csv("{{project_folder}}/deseq2_output/annotated/biotypes_go_raw.txt", index=None, sep="\\t")
+            bio_go.to_csv("{{deseq2_output}}/annotated/biotypes_go_raw.txt", index=None, sep="\\t")
             bio_go.columns = ["ensembl_gene_id","GO_id","GO_term"]
             bio_go=bio_go.sort_values(by=["ensembl_gene_id","GO_id"], ascending=True )
 
@@ -69,7 +69,7 @@ if "{{biomart_host}}" != "None":
             bio_go=bio_go.astype(str)
             bio_go=pd.merge(GTF,bio_go,on=["ensembl_gene_id"],how="outer")
             bio_go=bio_go.sort_values(by=["ensembl_gene_id"],ascending=True)
-            bio_go.to_csv("{{project_folder}}/deseq2_output/annotated/biotypes_go.txt", sep= "\\t", index=None)
+            bio_go.to_csv("{{deseq2_output}}/annotated/biotypes_go.txt", sep= "\\t", index=None)
             bio_go.to_csv("{{biotypes_go}}", sep= "\\t", index=None)
 
         except Exception as e:
@@ -77,15 +77,15 @@ if "{{biomart_host}}" != "None":
             bio_go=pd.DataFrame(columns=["ensembl_gene_id"])         
 
     else:
-        shutil.copy( "{{biotypes_go}}".replace("biotypes_go.txt", "biotypes_go_raw_topgo.txt"), "{{project_folder}}/deseq2_output/annotated/biotypes_go_raw_topgo.txt" )
-        shutil.copy( "{{biotypes_go}}".replace("biotypes_go.txt", "biotypes_go_raw.txt"), "{{project_folder}}/deseq2_output/annotated/biotypes_go_raw.txt" )
-        shutil.copy( "{{biotypes_go}}", "{{project_folder}}/deseq2_output/annotated/biotypes_go.txt")
+        shutil.copy( "{{biotypes_go}}".replace("biotypes_go.txt", "biotypes_go_raw_topgo.txt"), "{{deseq2_output}}/annotated/biotypes_go_raw_topgo.txt" )
+        shutil.copy( "{{biotypes_go}}".replace("biotypes_go.txt", "biotypes_go_raw.txt"), "{{deseq2_output}}/annotated/biotypes_go_raw.txt" )
+        shutil.copy( "{{biotypes_go}}", "{{deseq2_output}}/annotated/biotypes_go.txt")
 """,
     desc={
         "gtf":"",
         "biomart_dataset": "",
         "biomart_host": "",
-        "project_folder":"",
+        "deseq2_output":"",
         "biotypes_go":"'<path/to/biotypes_go.txt' inclusive 'biotypes_go.txt'"
     },
     container="mpgagebioinformatics/rnaseq.python:3.8-8",
@@ -95,7 +95,7 @@ if "{{biomart_host}}" != "None":
 
 parse_submission=jawm.Process(
     name="parse_submission",
-    when=lambda p: not os.path.isfile( os.path.join( p.var["project_folder"], "deseq2_output" , "models.txt") ) ,
+    when=lambda p: not os.path.isfile( os.path.join( p.var["deseq2_output"], "models.txt") ) ,
     script="""\
 #!/usr/local/bin/python
 import pandas as pd
@@ -103,8 +103,7 @@ from biomart import BiomartServer
 import itertools
 import AGEpy as age
 import os
-if not os.path.isdir("{{project_folder}}/deseq2_output/"):
-    os.makedirs("{{project_folder}}/deseq2_output/")
+
 sfile="{{samplestable}}"
 if os.path.isfile(sfile):
     sdf=pd.read_excel(sfile)
@@ -127,7 +126,7 @@ files_col=sam_df.columns.tolist()[0]
 cond_col=sam_df.columns.tolist()[1]
 sam_df.index=[s.split("{{read1_suffix}}")[0] for s in sam_df[files_col].tolist()]
 sam_df=sam_df[[cond_col]]
-sam_df.to_csv("{{project_folder}}/deseq2_output/samples_MasterTable.txt", sep="\t")
+sam_df.to_csv("{{deseq2_output}}/samples_MasterTable.txt", sep="\t")
 fs=sdf.columns.tolist()[0]
 sdf[fs]=sdf[fs].apply(lambda x: x.split("{{read1_suffix}}")[0] )
 sdf.index=sdf[fs].tolist()
@@ -166,18 +165,18 @@ for m in single_models:
             target=[ t for t in coef if t != ref ][0]
             coef=m+"_"+str(target)+"_vs_"+str(ref)
             filename=coef+g.split(m)[-1]
-            print("{{project_folder}}/deseq2_output/"+filename+".input.tsv")
-            outdf_.to_csv("{{project_folder}}/deseq2_output/"+filename+".input.tsv", sep="\t")
+            print("{{deseq2_output}}/"+filename+".input.tsv")
+            outdf_.to_csv("{{deseq2_output}}/"+filename+".input.tsv", sep="\t")
             text=[ filename, m, g, str(ref), coef ]
             text="\\t".join(text)
             textout.append(text)
         
-with open("{{project_folder}}/deseq2_output/models.txt", "w") as mout:
+with open("{{deseq2_output}}/models.txt", "w") as mout:
     mout.write("\\n".join(textout) + "\\n")
 """,
     desc={
         "samplestable":"",
-        "project_folder":"",
+        "deseq2_output":"",
         "read1_suffix":""
     },
     container="mpgagebioinformatics/rnaseq.python:3.8-8",
@@ -186,23 +185,21 @@ with open("{{project_folder}}/deseq2_output/models.txt", "w") as mout:
 
 tx2gene=jawm.Process(
     name="tx2gene",
-    when=lambda p: not os.path.isfile( os.path.join( p.var["project_folder"], "deseq2_output" , "tx2gene.csv") ) ,
+    when=lambda p: not os.path.isfile( os.path.join( p.var["deseq2_output"] , "tx2gene.csv") ) ,
     script="""\
 #!/usr/local/bin/python
 import AGEpy as age
 import os
-if not os.path.isdir("{{project_folder}}/deseq2_output/"):
-    os.makedirs("{{project_folder}}/deseq2_output/")
 GTF=age.readGTF("{{gtf}}")
 GTF["gene_id"]=age.retrieve_GTF_field(field="gene_id",gtf=GTF)
 GTF["transcript_id"]=age.retrieve_GTF_field(field="transcript_id",gtf=GTF)
 tx2gene=GTF[["transcript_id","gene_id"]].drop_duplicates().dropna()
 tx2gene.columns=["TXNAME","GENEID"]
-tx2gene[["TXNAME","GENEID"]].to_csv("{{project_folder}}/deseq2_output/tx2gene.csv", quoting=1, index=None)
+tx2gene[["TXNAME","GENEID"]].to_csv("{{deseq2_output}}/tx2gene.csv", quoting=1, index=None)
 """,
     desc={
         "gtf":"",
-        "project_folder":"", 
+        "deseq2_output":"", 
     },
     container="mpgagebioinformatics/rnaseq.python:3.8-8",
     manager_slurm={ "-c": 1, "--mem": "4GB", "-t": "1:00:00" }
@@ -211,7 +208,7 @@ tx2gene[["TXNAME","GENEID"]].to_csv("{{project_folder}}/deseq2_output/tx2gene.cs
 
 tx2gene_proc=jawm.Process(
     name="tx2gene_proc",
-    when=lambda p: not os.path.isfile( os.path.join( p.var["project_folder"], "deseq2_output" , "deseq2.part1.Rdata") ) ,
+    when=lambda p: not os.path.isfile( os.path.join( p.var["deseq2_output"] , "deseq2.part1.Rdata") ) ,
     script="""\
 #!/usr/bin/Rscript
 library(tidyverse)
@@ -221,10 +218,10 @@ library(DESeq2)
 library(rhdf5)
 library(readr)
 library(apeglm)
-tx2gene <- read_csv("{{project_folder}}/deseq2_output/tx2gene.csv")
+tx2gene <- read_csv("{{deseq2_output}}/tx2gene.csv")
 tx2gene <- tx2gene[rowSums(is.na(tx2gene)) == 0,]
 tx2gene <- droplevels(tx2gene)
-save.image("{{project_folder}}/deseq2_output/deseq2.part1.Rdata")
+save.image("{{deseq2_output}}/deseq2.part1.Rdata")
 sessionInfo()
 """,
     desc={
@@ -236,10 +233,10 @@ sessionInfo()
 
 deseq2=jawm.Process(
     name="deseq2",
-    when=lambda p: not os.path.isfile( os.path.join( p.var["project_folder"], "deseq2_output" , p.var["input_file"].split(".input.tsv")[0]+".results.tsv" ) ) ,
+    when=lambda p: not os.path.isfile( os.path.join( p.var["deseq2_output"] , p.var["input_file"].split(".input.tsv")[0]+".results.tsv" ) ) ,
     script="""\
 #!/usr/bin/Rscript
-load("{{project_folder}}/deseq2_output/deseq2.part1.Rdata")
+load("{{deseq2_output}}/deseq2.part1.Rdata")
 library(tximportData)
 library(tximport)
 library(DESeq2)
@@ -254,10 +251,10 @@ ref=stringr::str_split(ref, ".input.tsv")[[1]][[1]]
 
 coef=stringr::str_split("{{input_file}}", ".input.tsv")[[1]][[1]]
 
-out=paste("{{project_folder}}/deseq2_output/",coef,".results.tsv", sep="")
+out=paste("{{deseq2_output}}/",coef,".results.tsv", sep="")
 
 # filein
-sampleTable<-read.delim2("{{project_folder}}/deseq2_output/{{input_file}}",sep = "\t", row.names = 1)
+sampleTable<-read.delim2("{{deseq2_output}}/{{input_file}}",sep = "\t", row.names = 1)
 samples<-row.names(sampleTable)
 
 # dir
@@ -279,8 +276,8 @@ if(circRNA_folder != "None"){
   # gene count table
   gene_count = as.data.frame(counts(dds, normalized=FALSE))
   # circRNA table
-  circRNA = read.delim('{{project_folder}}/{{circRNA}}/CircRNACount', check.names = FALSE, as.is = TRUE )
-  coord = read.delim('{{project_folder}}/{{circRNA}}/CircCoordinates', check.names = FALSE, as.is = TRUE)
+  circRNA = read.delim('{{deseq2_output}}/{{circRNA}}/CircRNACount', check.names = FALSE, as.is = TRUE )
+  coord = read.delim('{{deseq2_output}}/{{circRNA}}/CircCoordinates', check.names = FALSE, as.is = TRUE)
   # reformat circRNA header
   names(circRNA) <- gsub('.Chimeric.out.junction', '', names(circRNA))
   row.names(circRNA) <- paste0('circ_', coord[, 'Chr'], ':', coord[,'Start'], '-', coord[,'End'], '|', coord[,'Strand'], '|', coord[,'Gene'])
@@ -312,7 +309,7 @@ sessionInfo()
 """,
     desc={
         "input_file":"",
-        "project_folder":"",
+        "deseq2_output":"",
         "kallisto_output":"",
         "circRNA": ""
     },
@@ -322,10 +319,10 @@ sessionInfo()
 
 mastertable=jawm.Process(
     name="mastertable",
-    when=lambda p: not os.path.isfile( os.path.join( p.var["project_folder"], "deseq2_output" , "all_results_stats.xlsx" ) ) ,
+    when=lambda p: not os.path.isfile( os.path.join( p.var["deseq2_output"] , "all_results_stats.xlsx" ) ) ,
     script="""\
 #!/usr/bin/Rscript
-load("{{project_folder}}/deseq2_output/deseq2.part1.Rdata")
+load("{{deseq2_output}}/deseq2.part1.Rdata")
 library(tidyverse)
 library(tximportData)
 library(tximport)
@@ -334,7 +331,7 @@ library(rhdf5)
 library(readr)
 library(apeglm)
 
-sampleTable<-read.delim2("{{project_folder}}/deseq2_output/samples_MasterTable.txt",sep = "\\t", row.names = 1)
+sampleTable<-read.delim2("{{deseq2_output}}/samples_MasterTable.txt",sep = "\\t", row.names = 1)
 samples<-row.names(sampleTable)
 # dir
 dir <- "{{kallisto_output}}"
@@ -352,8 +349,8 @@ if(circRNA_folder != "None"){
   # gene count table
   gene_count = as.data.frame(counts(dds, normalized=FALSE))
   # circRNA table
-  circRNA = read.delim('{{project_folder}}/{{circRNA}}/CircRNACount', check.names = FALSE, as.is = TRUE )
-  coord = read.delim('{{project_folder}}/{{circRNA}}/CircCoordinates', check.names = FALSE, as.is = TRUE)
+  circRNA = read.delim('{{deseq2_output}}/{{circRNA}}/CircRNACount', check.names = FALSE, as.is = TRUE )
+  coord = read.delim('{{deseq2_output}}/{{circRNA}}/CircCoordinates', check.names = FALSE, as.is = TRUE)
 
   # reformat circRNA header
   names(circRNA) <- gsub('.Chimeric.out.junction', '', names(circRNA))
@@ -369,11 +366,11 @@ if(circRNA_folder != "None"){
 dds <- estimateSizeFactors(dds)
 res.counts <- counts(dds, normalized=TRUE)
 res_counts <- as.data.frame(res.counts)
-openxlsx::write.xlsx(res_counts, "{{project_folder}}/deseq2_output/all_res_counts.xlsx", row.names = TRUE, col.names = TRUE)
-write.table(res_counts, "{{project_folder}}/deseq2_output/all_res_counts.tsv", sep = "\\t", quote = T, row.names = T)
-result_tables <- list.files('{{project_folder}}/deseq2_output/', pattern = '.results.tsv')
+openxlsx::write.xlsx(res_counts, "{{deseq2_output}}/all_res_counts.xlsx", row.names = TRUE, col.names = TRUE)
+write.table(res_counts, "{{deseq2_output}}/all_res_counts.tsv", sep = "\\t", quote = T, row.names = T)
+result_tables <- list.files('{{deseq2_output}}/', pattern = '.results.tsv')
 for(f in result_tables){
-  tmp <- read.delim(paste0('{{project_folder}}/deseq2_output/', f))
+  tmp <- read.delim(paste0('{{deseq2_output}}/', f))
   tmp <- tmp[,c('log2FoldChange', 'pvalue', 'padj')]
   names(tmp) <- paste(names(tmp), gsub('.results.tsv', '', gsub('Group_', '', f)), sep = '.')
   res_counts <- merge(res_counts, tmp, by.x = 'row.names', by.y = 'row.names', all = TRUE)
@@ -388,14 +385,14 @@ fpkm.deseq = as.data.frame(fpkm(dds))
 names(fpkm.deseq) = paste0('fpkm.', names(fpkm.deseq))
 res_counts = merge(res_counts, fpkm.deseq, by = 'row.names', all = TRUE)
 res_counts = res_counts[,-1]
-write.table(res_counts, "{{project_folder}}/deseq2_output/all_results_stats.tsv", sep = "\\t", quote = F, row.names = F)
-openxlsx::write.xlsx(res_counts, "{{project_folder}}/deseq2_output/all_results_stats.xlsx", row.names = FALSE, col.names = TRUE)
+write.table(res_counts, "{{deseq2_output}}/all_results_stats.tsv", sep = "\\t", quote = F, row.names = F)
+openxlsx::write.xlsx(res_counts, "{{deseq2_output}}/all_results_stats.xlsx", row.names = FALSE, col.names = TRUE)
 
 sessionInfo()
 """,
     desc={
         "circRNA": "",
-        "project_folder":"",
+        "deseq2_output":"",
         "kallisto_output":"",
     },
     container="mpgagebioinformatics/deseq2:1.38.0",
@@ -404,7 +401,7 @@ sessionInfo()
 
 annotator=jawm.Process(
     name="annotator",
-    when=lambda p: not os.path.isfile( os.path.join( p.var["project_folder"], "deseq2_output" , "annotated", "masterTable_annotated.xlsx" ) ) ,
+    when=lambda p: not os.path.isfile( os.path.join( p.var["deseq2_output"], "annotated", "masterTable_annotated.xlsx" ) ) ,
     script="""\
 #!/usr/local/bin/python
 import pandas as pd
@@ -412,11 +409,11 @@ import os
 import AGEpy as age
 import shutil
 
-if not os.path.isdir("{{project_folder}}/deseq2_output/annotated/") :
-    os.makedirs("{{project_folder}}/deseq2_output/annotated/")
+if not os.path.isdir("{{deseq2_output}}/annotated/") :
+    os.makedirs("{{deseq2_output}}/annotated/")
 
-if os.path.exists("{{project_folder}}/deseq2_output/annotated/biotypes_go.txt"):
-    bio_go=pd.read_csv( "{{project_folder}}/deseq2_output/annotated/biotypes_go.txt", sep="\t")
+if os.path.exists("{{deseq2_output}}/annotated/biotypes_go.txt"):
+    bio_go=pd.read_csv( "{{deseq2_output}}/annotated/biotypes_go.txt", sep="\t")
 else:
     bio_go=pd.DataFrame(columns=["ensembl_gene_id"])
 
@@ -426,24 +423,19 @@ GTF["gene_name"]=age.retrieve_GTF_field(field="gene_name",gtf=GTF)
 id_name=GTF[["gene_id","gene_name"]].drop_duplicates()
 id_name.reset_index(inplace=True, drop=True)
 id_name.columns=["ensembl_gene_id","gene_name"]
-#id_name=pd.read_table("{{project_folder}}/kallisto_index/cdna.norRNA.tsv")
-#id_name=id_name[["gene_id","gene_symbol","description"]]
-#id_name.columns=["ensembl_gene_id","gene_name","description"]
-#id_name=id_name.drop_duplicates()
-#id_name.reset_index(inplace=True,drop=True)
 
-deg_files=os.listdir("{{project_folder}}/deseq2_output/")
+deg_files=os.listdir("{{deseq2_output}}/")
 deg_files=[ s for s in deg_files if "results.tsv" in s ]
 i=1
 s=[]
 dfs={}
 for f in deg_files:
-    df=pd.read_table("{{project_folder}}/deseq2_output/"+f)
+    df=pd.read_table("{{deseq2_output}}/"+f)
     df=pd.merge(id_name,df,left_on=["ensembl_gene_id"],right_index=True, how="right") # change to gene_id
     df=pd.merge(df,bio_go,on=["ensembl_gene_id"],how="left")
     df=df.sort_values(by=["padj"],ascending=True)
-    df.to_csv("{{project_folder}}/deseq2_output/annotated/"+f, sep="\\t",index=None)
-    df.to_excel("{{project_folder}}/deseq2_output/annotated/"+f.replace('.tsv', '.xlsx'), index=None)
+    df.to_csv("{{deseq2_output}}/annotated/"+f, sep="\\t",index=None)
+    df.to_excel("{{deseq2_output}}/annotated/"+f.replace('.tsv', '.xlsx'), index=None)
     n=f.split(".results.tsv")[0]
     s.append([i,n])
     df=df[df["padj"]<0.05]
@@ -451,21 +443,21 @@ for f in deg_files:
     dfs[i]=df
     i=i+1
 sdf=pd.DataFrame(s,columns=["sheet","comparison"])
-EXC=pd.ExcelWriter("{{project_folder}}/deseq2_output/annotated/significant.xlsx")
+EXC=pd.ExcelWriter("{{deseq2_output}}/annotated/significant.xlsx")
 sdf.to_excel(EXC,"summary",index=None)
 for k in list(dfs.keys()):
     dfs[k].to_excel(EXC, str(k),index=None)
 EXC.close()
-mt=pd.read_csv("{{project_folder}}/deseq2_output/all_results_stats.tsv", sep="\\t")
+mt=pd.read_csv("{{deseq2_output}}/all_results_stats.tsv", sep="\\t")
 mt_ann=pd.merge(id_name,mt,on=["ensembl_gene_id"], how="right")
 mt_ann=pd.merge(mt_ann,bio_go,on=["ensembl_gene_id"],how="left")
-mt_ann.to_csv("{{project_folder}}/deseq2_output/annotated/masterTable_annotated.tsv", sep="\\t",index=None)
-mt_ann.to_excel("{{project_folder}}/deseq2_output/annotated/masterTable_annotated.xlsx", index=None)
+mt_ann.to_csv("{{deseq2_output}}/annotated/masterTable_annotated.tsv", sep="\\t",index=None)
+mt_ann.to_excel("{{deseq2_output}}/annotated/masterTable_annotated.xlsx", index=None)
 """,
     desc={
         "gtf":"",
         "biomart_host": "",
-        "project_folder":"",
+        "deseq2_output":"",
     },
     container="mpgagebioinformatics/rnaseq.python:3.8-8",
     manager_slurm={ "-c": 2, "--mem": "4GB", "-t": "1:00:00" }
@@ -473,7 +465,7 @@ mt_ann.to_excel("{{project_folder}}/deseq2_output/annotated/masterTable_annotate
 
 david=jawm.Process(
     name="david",
-    when=lambda p: (  ( not os.path.isfile( os.path.join( p.var["project_folder"], "deseq2_output" , "annotated", "david.touch" ) ) )  &  ( p.var["DAVIDUSER"] != "" ) ) ,
+    when=lambda p: (  ( not os.path.isfile( os.path.join( p.var["deseq2_output"] , "annotated", "david.touch" ) ) )  &  ( p.var["DAVIDUSER"] != "" ) ) ,
     script="""\
 #!/usr/local/bin/python
 import pandas as pd
@@ -481,9 +473,10 @@ import AGEpy as age
 import os 
 import sys
 from pathlib import Path
-file_path = Path("{{project_folder}}/deseq2_output/annotated/david.touch")
 
-deseq2="{{project_folder}}/deseq2_output/annotated/"
+file_path = Path("{{deseq2_output}}/annotated/david.touch")
+
+deseq2="{{deseq2_output}}/annotated/"
 files=os.listdir(deseq2)
 files=[ s for s in files if ".results.tsv" in s ]
 for f in files:
@@ -535,7 +528,7 @@ file_path.touch()
     desc={
         "DAVIDUSER": "",
         "daviddatabase": "",
-        "project_folder": ""
+        "deseq2_output": ""
     },
     container="mpgagebioinformatics/rnaseq.python:3.8-8",
     manager_slurm={ "-c": 1, "--mem": "8GB", "-t": "12:00:00" }
@@ -543,7 +536,7 @@ file_path.touch()
 
 topgo=jawm.Process(
     name="topgo",
-    when=lambda p: not os.path.isfile( os.path.join( p.var["project_folder"], "deseq2_output" , "annotated", p.var["input_file"].replace("results.tsv","topGO.tsv") ) ) ,
+    when=lambda p: not os.path.isfile( os.path.join( p.var["deseq2_output"] , "annotated", p.var["input_file"].replace("results.tsv","topGO.tsv") ) ) ,
     script="""\
 #!/usr/bin/Rscript
 library(topGO)
@@ -551,7 +544,7 @@ library(biomaRt)
 library(plyr)
 library(openxlsx)
 ## ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-fin="{{project_folder}}/deseq2_output/annotated/{{input_file}}" # topGO.tsv
+fin="{{deseq2_output}}/annotated/{{input_file}}" # topGO.tsv
 Din = read.delim(fin, as.is = TRUE)
 # head(Din)
 # make geneList input for topGO
@@ -577,7 +570,7 @@ if ( length(levels(geneList)) > 1) {
     #                          mart = ensembl)
 
     # print("goterms<-read.delim")
-    goterms<-read.delim("{{project_folder}}/deseq2_output/annotated/biotypes_go_raw_topgo.txt", as.is = TRUE)
+    goterms<-read.delim("{{deseq2_output}}/annotated/biotypes_go_raw_topgo.txt", as.is = TRUE)
     ## ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
     geneID2GO = list()
     for(i in 1:nrow(goterms)){
@@ -656,7 +649,7 @@ if ( length(levels(geneList)) > 1) {
 }
 """,
     desc={
-        "project_folder":"",
+        "deseq2_output":"",
         "input_file":"",
     },
     container="mpgagebioinformatics/topgo:2.50.0",
@@ -665,8 +658,8 @@ if ( length(levels(geneList)) > 1) {
 
 cellplot=jawm.Process(
     name="cellplot",
-    when=lambda p: ( not os.path.isfile( os.path.join( p.var["project_folder"], "deseq2_output" , "annotated", p.var["inFile"].split( p.var["filetype"] )[0] )+p.var["category"]+".cellplot.pdf"  ) ) & \
-                   ( not os.path.isfile( os.path.join( p.var["project_folder"], "deseq2_output" , "annotated", p.var["inFile"].split( p.var["filetype"] )[0] )+p.var["category"]+".cellplot.touch" ) ) ,
+    when=lambda p: ( not os.path.isfile( os.path.join( p.var["deseq2_output"], "annotated", p.var["inFile"].split( p.var["filetype"] )[0] )+p.var["category"]+".cellplot.pdf"  ) ) & \
+                   ( not os.path.isfile( os.path.join( p.var["deseq2_output"], "annotated", p.var["inFile"].split( p.var["filetype"] )[0] )+p.var["category"]+".cellplot.touch" ) ) ,
     script="""\
 #!/usr/bin/Rscript
 
@@ -689,7 +682,7 @@ library(readxl)
 #if (!require(CellPlot)) devtools::install_github("dieterich-lab/CellPlot")
 library(CellPlot)
 
-setwd("{{project_folder}}/deseq2_output/annotated/")
+setwd("{{deseq2_output}}/annotated/")
 
 # read in data, either excel or tsv
 # reformat input data
@@ -785,7 +778,7 @@ dev.off()
 file.create(tmp_name)
 """,
     desc={
-        "project_folder":"",
+        "deseq2_output":"",
         "inFile":"",
         "filetype":"",
         "category":"",
@@ -798,12 +791,12 @@ file.create(tmp_name)
 
 rcistarget=jawm.Process(
     name="rcistarget",
-    when=lambda p: ( not os.path.isfile( os.path.join( p.var["project_folder"], "deseq2_output" , "annotated", p.var["input_file"].replace( ".results.tsv", ".RcisTarget.xlsx")  ) ) &  ( p.var["rcis_db"] != "" ) ),
+    when=lambda p: ( not os.path.isfile( os.path.join( p.var["deseq2_output"] , "annotated", p.var["input_file"].replace( ".results.tsv", ".RcisTarget.xlsx")  ) ) &  ( p.var["rcis_db"] != "" ) ),
     script="""\
 #!/usr/bin/Rscript
 library(RcisTarget)
 library(openxlsx)
-setwd("{{project_folder}}/deseq2_output/annotated/")
+setwd("{{deseq2_output}}/annotated/")
 # fout=stringr::str_split("{{input_file}}", ".results.tsv")[[1]][[1]]
 # fout=paste0(fout,".RcisTarget.xlsx")
 fout <- sub("\\\.results\\\.tsv$", ".RcisTarget.xlsx", "{{input_file}}")
@@ -870,7 +863,7 @@ saveWorkbook(wb, fout, overwrite = TRUE)
 """,
     desc={
         "rcis_db": "Available from https://resources.aertslab.org/cistarget/",
-        "project_folder":"",
+        "deseq2_output":"",
         "input_file":""
     },
     container="mpgagebioinformatics/rcistarget:1.17.0",
@@ -879,14 +872,14 @@ saveWorkbook(wb, fout, overwrite = TRUE)
 
 qc_plots=jawm.Process(
     name="qc_plots",
-    when=lambda p: not os.path.isfile( os.path.join( p.var["project_folder"], "qc_plots" , "pca_all_samples.pdf"  ) ),
+    when=lambda p: not os.path.isfile( os.path.join( p.var["deseq2_output"], "qc_plots" , "pca_all_samples.pdf"  ) ),
     script="""\
 #!/bin/bash
-mkdir -p {{project_folder}}/qc_plots/
-QC_plots -o {{project_folder}}/qc_plots/ -de {{project_folder}}/deseq2_output/ -s {{project_folder}}/deseq2_output/samples_MasterTable.txt -t {{project_folder}} -sp {{spec}}
+mkdir -p {{deseq2_output}}/qc_plots/
+QC_plots -o {{deseq2_output}}/qc_plots/ -de {{deseq2_output}}/ -s {{deseq2_output}}/samples_MasterTable.txt -t {{deseq2_output}} -sp {{spec}}
 """,
     desc={
-        "project_folder":"",
+        "deseq2_output":"",
         "spec": ""
     },
     container="mpgagebioinformatics/rnaseq.python:3.8-8",
@@ -895,7 +888,7 @@ QC_plots -o {{project_folder}}/qc_plots/ -de {{project_folder}}/deseq2_output/ -
 
 get_ip=jawm.Process(
     name="get_ip",
-    when=lambda p: ( not os.path.isfile( os.path.join( p.var["project_folder"], "deseq2_output" , "annotated", "string.done"  ) ) &  ( p.var["cytoscape_host"] != "" ) ) ,
+    when=lambda p: ( not os.path.isfile( os.path.join( p.var["deseq2_output"] , "annotated", "string.done"  ) ) &  ( p.var["cytoscape_host"] != "" ) ) ,
     script="""\
 #!/bin/bash
 while [[ ! -f {{cytoscape_host}} ]] ; do 
@@ -903,7 +896,7 @@ while [[ ! -f {{cytoscape_host}} ]] ; do
   sleep 3$((RANDOM % 9))
 done
 mv {{cytoscape_host}} {{cytoscape_host}}_inuse
-touch {{project_folder}}/deseq2_output/annotated/string.running
+touch {{deseq2_output}}/annotated/string.running
 """,
     desc={
         "cytoscape_host":""
@@ -915,7 +908,7 @@ touch {{project_folder}}/deseq2_output/annotated/string.running
 
 string=jawm.Process(
     name="string",
-    when=lambda p: ( not os.path.isfile( os.path.join( p.var["project_folder"], "deseq2_output" , "annotated", "string.done"  ) ) &  ( p.var["cytoscape_host"] != "" ) ),
+    when=lambda p: ( not os.path.isfile( os.path.join( p.var["deseq2_output"] , "annotated", "string.done"  ) ) &  ( p.var["cytoscape_host"] != "" ) ),
     script="""\
 #!/usr/local/bin/python
 import pandas as pd
@@ -954,9 +947,9 @@ try:
     ###########################################################
     aging_genes = []
     ### ATTENTION ### if you are using yeast, you will need to uncomment the follwing lines
-    input_files=os.listdir("{{project_folder}}/deseq2_output/annotated/")
+    input_files=os.listdir("{{deseq2_output}}/annotated/")
     input_files=[s for s in input_files if ".results.tsv" in s ]
-    input_files=[ os.path.join("{{project_folder}}/deseq2_output/annotated/",s) for s in input_files if ".results.tsv" in s ]
+    input_files=[ os.path.join("{{deseq2_output}}/annotated/",s) for s in input_files if ".results.tsv" in s ]
     python_output="/".join(input_files[0].split("/")[:-1])
     if species in tags.keys():
         organismtag=tags[species]
@@ -975,9 +968,9 @@ try:
             aging_genes=aging_genes[organismtag+"_ensembl_gene_id"].tolist()
     ### till here
     ###########################################################
-    input_files=os.listdir("{{project_folder}}/deseq2_output/annotated/")
+    input_files=os.listdir("{{deseq2_output}}/annotated/")
     input_files=[s for s in input_files if ".results.tsv" in s ]
-    input_files=[ os.path.join("{{project_folder}}/deseq2_output/annotated/",s) for s in input_files if ".results.tsv" in s ]
+    input_files=[ os.path.join("{{deseq2_output}}/annotated/",s) for s in input_files if ".results.tsv" in s ]
     for fin in input_files:
         python_output="/".join(fin.split("/")[:-1])
         target=fin.replace("results.tsv","cytoscape")
@@ -1146,14 +1139,14 @@ except Exception as e:
     traceback.print_exc()
     exit(1)
 
-file_path = Path("{{project_folder}}/deseq2_output/annotated/string.done" )
+file_path = Path("{{deseq2_output}}/annotated/string.done" )
 file_path.touch()
 """,
     desc={
         "cytoscape_host":"Path to a txt file containing one line with the IP address of your running cytoscape instance.",
         "biomart_host": "",
         "species": "",
-        "project_folder":""
+        "deseq2_output":""
     },
     container="mpgagebioinformatics/rnaseq.python:3.8-8",
     manager_slurm={ "-c": 1, "--mem": "20GB", "-t": "4:00:00" }
@@ -1161,15 +1154,15 @@ file_path.touch()
 
 release_ip=jawm.Process(
     name="release_ip",
-    when=lambda p: ( os.path.isfile( os.path.join( p.var["project_folder"], "deseq2_output" , "annotated", "string.running"  ) ) &  ( p.var["cytoscape_host"] != "" ) ),
+    when=lambda p: ( os.path.isfile( os.path.join( p.var["deseq2_output"] , "annotated", "string.running"  ) ) &  ( p.var["cytoscape_host"] != "" ) ),
     script="""\
 #!/bin/bash
 if [[ -f {{cytoscape_host}}_inuse ]] ; then mv {{cytoscape_host}}_inuse {{cytoscape_host}} ; fi
-rm -rf {{project_folder}}/deseq2_output/annotated/string.running
+rm -rf {{deseq2_output}}/annotated/string.running
 """,
     desc={
         "cytoscape_host": "",
-        "project_folder":""
+        "deseq2_output":""
     },
     container=""
 )
@@ -1180,7 +1173,7 @@ upload_paths=jawm.Process(
     script="""\
 rm -rf upload.txt
 
-cd {{project_folder}}/deseq2_output/annotated
+cd {{deseq2_output}}/annotated
 
 for f in $(ls *.results.xlsx) ; do echo "deseq2 $(readlink -f ${f})" >>  upload.txt_ ; done
 echo "deseq2 $(readlink -f significant.xlsx)" >>  upload.txt_
@@ -1205,7 +1198,7 @@ fi
 uniq upload.txt_ upload.txt 
 rm upload.txt_
 
-cd {{project_folder}}/qc_plots
+cd {{deseq2_output}}/qc_plots
 rm -rf upload.txt 
 for f in $(ls *.* | grep -v upload.txt) ; do echo "qc_plots $(readlink -f ${f})" >>  upload.txt_ ; done
 
@@ -1213,7 +1206,7 @@ uniq upload.txt_ upload.txt
 rm upload.txt_
 """,
     desc={
-        "project_folder": ""
+        "deseq2_output": ""
     },
     container=""
 )
@@ -1235,7 +1228,7 @@ if __name__ == "__main__":
 
         jawm.Process.wait([ tx2gene_proc.hash, parse_submission.hash ])
 
-        base = os.path.join(deseq2.var["project_folder"], "deseq2_output")
+        base = deseq2.var["deseq2_output"]
         tests = glob.glob(os.path.join(base, "*input.tsv"))
 
         deseq2_jobs=[]
@@ -1255,14 +1248,13 @@ if __name__ == "__main__":
 
         annotator.execute( deseq2_jobs )
 
-
         # wait for annotator to complete before listing input files and starting david
         # as they are generated by annotator
         jawm.Process.wait( annotator.hash )
 
         david.execute( )
 
-        base = os.path.join(deseq2.var["project_folder"], "deseq2_output", "annotated")
+        base = os.path.join(deseq2.var["deseq2_output"], "annotated")
         tests_results = glob.glob(os.path.join(base, "*results.tsv"))
         topgo_jobs=[]
         for file in tests_results:
@@ -1273,7 +1265,7 @@ if __name__ == "__main__":
 
         jawm.Process.wait( topgo_jobs + [ david.hash ] )
 
-        base = os.path.join(deseq2.var["project_folder"], "deseq2_output", "annotated")
+        base = os.path.join(deseq2.var["deseq2_output"],  "annotated")
         david_files=glob.glob(os.path.join(base, "*.DAVID.tsv"))
         togo_files=glob.glob(os.path.join(base, "*.topGO.tsv"))
 
@@ -1324,7 +1316,7 @@ if __name__ == "__main__":
 
     if workflow("test", workflows):
 
-        with open(os.path.join(var["project_folder"], "test.txt"), 'w') as out:
+        with open(os.path.join(var["deseq2_output"], "test.txt"), 'w') as out:
             out.write("Test completed.")
 
         # for the test workflow we might also do something more
