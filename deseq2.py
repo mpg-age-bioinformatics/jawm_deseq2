@@ -174,6 +174,9 @@ for m in single_models:
 with open("{{deseq2_output}}/models.txt", "w") as mout:
     mout.write("\\n".join(textout) + "\\n")
 """,
+    var={
+        "samplestable": ""
+    },
     desc={
         "samplestable":"",
         "deseq2_output":"",
@@ -525,6 +528,9 @@ for f in files:
 
 file_path.touch()
 """,
+    var={
+        "DAVIDUSER":""
+    },
     desc={
         "DAVIDUSER": "",
         "daviddatabase": "",
@@ -861,6 +867,9 @@ for (nm in names(results)) {
 }
 saveWorkbook(wb, fout, overwrite = TRUE)
 """,
+    var={
+        "rcis_db": ""
+    },
     desc={
         "rcis_db": "Available from https://resources.aertslab.org/cistarget/",
         "deseq2_output":"",
