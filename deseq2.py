@@ -1,6 +1,8 @@
 import jawm
 import os
 
+AGEPY_IMAGE="mpgagebioinformatics/agepy:7c412ae"
+
 annotations=jawm.Process(
     name="annotations",
     when=lambda p: not os.path.isfile( os.path.join( p.var["deseq2_output"],"annotated",  "biotypes_go.txt") ) ,
@@ -19,7 +21,18 @@ if "{{biomart_host}}" != "None":
         from biomart import BiomartServer
         attributes=["ensembl_gene_id","external_gene_name","go_id","name_1006"]
         try:
-            server = BiomartServer( "{{biomart_host}}" )
+            biomart_host=age.get_ensembl_biomart_archive_url("{{release}}")
+            server = BiomartServer( biomart_host )
+
+            if "{{biomart_dataset}}" :
+                biomart_dataset="{{biomart_dataset}}"
+            elif "{{organism}}" :
+                organism="{{organism}}"
+                short=organism[0] + organism.split(" ")[1] + "_gene_ensembl"
+
+            else:
+                raise Exception("You must provide a biomart_dataset or an organism.")
+
             organism=server.datasets["{{biomart_dataset}}"]
             response=organism.search({"attributes":attributes})
             response=response.content.decode().split("\\n")
@@ -81,10 +94,14 @@ if "{{biomart_host}}" != "None":
         shutil.copy( "{{biotypes_go}}".replace("biotypes_go.txt", "biotypes_go_raw.txt"), "{{deseq2_output}}/annotated/biotypes_go_raw.txt" )
         shutil.copy( "{{biotypes_go}}", "{{deseq2_output}}/annotated/biotypes_go.txt")
 """,
+    var={
+        "biomart_dataset": "",
+        "organism":"",
+    },
     desc={
         "gtf":"",
         "biomart_dataset": "",
-        "biomart_host": "",
+        "release": "",
         "deseq2_output":"",
         "biotypes_go":"'<path/to/biotypes_go.txt' inclusive 'biotypes_go.txt'"
     },
