@@ -110,15 +110,15 @@ if os.path.isfile(sfile):
 
 elif os.path.isdir("{{kallisto_output}}"):
     print("Could not find a samples table of the form `pd.DataFrame(columns=['Files/Folders','group'])`")
-    print("Workinf on predefined / expected kallisto output to generate test comparisons.")
+    print("Working on predefined / expected kallisto output to generate test comparisons.")
     folders=os.listdir("{{kallisto_output}}")
     folders=[ s for s in folders if os.path.isdir(f"{{kallisto_output}}/{s}") ]
     folders=[ s for s in folders if not s.startswith("tmp.") ]
-    folders=[ s for s in folders if ".Rep_" in s ]
+    folders=[ s for s in folders if "{{rep_prefix}}" in s ]
     if not folders :
         raise Exception("Could not find a samples table of the form `pd.DataFrame(columns=['Files/Folders','group'])` nor a kallisto folder with Replicate information eg. <group>.Rep_<number> in it's sub folder names")
     folders.sort()
-    groups=[ s.split(".Rep_")[0] for s in folders ]
+    groups=[ s.split("{{rep_prefix}}")[0] for s in folders ]
     sdf=pd.DataFrame( { "Files/Folders":folders , "group":groups } )
 
 sam_df=sdf.copy()
@@ -175,7 +175,8 @@ with open("{{deseq2_output}}/models.txt", "w") as mout:
     mout.write("\\n".join(textout) + "\\n")
 """,
     var={
-        "samplestable": ""
+        "samplestable": "",
+        "rep_prefix":".Rep_"
     },
     desc={
         "samplestable":"",
@@ -310,6 +311,9 @@ write.table(counts.dge, out, sep="\\t")
 
 sessionInfo()
 """,
+    var={
+        "circRNA":"None"
+    },
     desc={
         "input_file":"",
         "deseq2_output":"",
@@ -389,10 +393,13 @@ names(fpkm.deseq) = paste0('fpkm.', names(fpkm.deseq))
 res_counts = merge(res_counts, fpkm.deseq, by = 'row.names', all = TRUE)
 res_counts = res_counts[,-1]
 write.table(res_counts, "{{deseq2_output}}/all_results_stats.tsv", sep = "\\t", quote = F, row.names = F)
-openxlsx::write.xlsx(res_counts, "{{deseq2_output}}/all_results_stats.xlsx", row.names = FALSE, col.names = TRUE)
+openxlsx::write.xlsx(res_counts, "{{deseq2_output}}/all_results_stats.xlsx", row.names = F, col.names = TRUE)
 
 sessionInfo()
 """,
+    var={
+        "circRNA":"None"
+    },
     desc={
         "circRNA": "",
         "deseq2_output":"",
