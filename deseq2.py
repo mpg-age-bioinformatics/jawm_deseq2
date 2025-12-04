@@ -16,83 +16,85 @@ import shutil
 if not os.path.isdir("{{deseq2_output}}/annotated/") :
     os.makedirs("{{deseq2_output}}/annotated/")
 
-if "{{biomart_host}}" != "None":
-    if not os.path.isfile("{{biotypes_go}}"):
-        from biomart import BiomartServer
-        attributes=["ensembl_gene_id","external_gene_name","go_id","name_1006"]
-        try:
-            biomart_host=age.get_ensembl_biomart_archive_url("{{release}}")
-            server = BiomartServer( biomart_host )
+if not os.path.isfile("{{biotypes_go}}"):
+    print("Not found: {{biotypes_go}}")
+    print("Contacting the BiomartServer.")
+    from biomart import BiomartServer
+    attributes=["ensembl_gene_id","external_gene_name","go_id","name_1006"]
+    # try:
+    biomart_host=age.get_ensembl_biomart_archive_url("{{release}}")
+    print(f"biomart host: {biomart_host}" )
+    server = BiomartServer( biomart_host )
 
-            if "{{biomart_dataset}}" :
-                biomart_dataset="{{biomart_dataset}}"
-            elif "{{organism}}" :
-                organism="{{organism}}"
-                short=organism[0] + organism.split(" ")[1] + "_gene_ensembl"
-
-            else:
-                raise Exception("You must provide a biomart_dataset or an organism.")
-
-            organism=server.datasets["{{biomart_dataset}}"]
-            response=organism.search({"attributes":attributes})
-            response=response.content.decode().split("\\n")
-            response=[s.split("\\t") for s in response ]
-            bio_go=pd.DataFrame(response,columns=attributes)
-            bio_go=bio_go.sort_values(by=attributes, ascending=True )
-            bio_go.to_csv("{{biotypes_go}}".replace("biotypes_go.txt", "biotypes_go_raw_topgo.txt"), index=None, sep="\\t")
-            bio_go.to_csv("{{deseq2_output}}/annotated/biotypes_go_raw_topgo.txt", index=None, sep="\\t")
-            bio_go=bio_go[["ensembl_gene_id","go_id","name_1006"]]
-            bio_go.to_csv("{{biotypes_go}}".replace("biotypes_go.txt", "biotypes_go_raw.txt"), index=None, sep="\\t")
-            bio_go.to_csv("{{deseq2_output}}/annotated/biotypes_go_raw.txt", index=None, sep="\\t")
-            bio_go.columns = ["ensembl_gene_id","GO_id","GO_term"]
-            bio_go=bio_go.sort_values(by=["ensembl_gene_id","GO_id"], ascending=True )
-
-            def join_sorted_unique(series):
-                # drop NaNs, cast to str once, dedup while preserving first-seen order, then sort for full determinism
-                vals = pd.Series(series).dropna().astype(str).unique()   # preserves first appearance
-                # vals = sorted(vals)                                      # or omit this line if you prefer original order
-                return "; ".join(vals)
-
-            def CombineAnn(df):
-                return pd.Series(dict(ensembl_gene_id = ("ensembl_gene_id", join_sorted_unique) ,\
-                                GO_id = ("GO_id", join_sorted_unique) ,\
-                                GO_term = ("GO_term", join_sorted_unique)  ,\
-                                ) )
-
-            bio_go = (
-                bio_go.groupby("ensembl_gene_id", sort=False)
-                    .agg(
-                        ensembl_gene_id=("ensembl_gene_id", "first"),
-                        GO_id=("GO_id", join_sorted_unique),
-                        GO_term=("GO_term", join_sorted_unique),
-                    )
-                    .reset_index(drop=True)
-                    # ensure column order
-                    [["ensembl_gene_id","GO_id","GO_term"]]
-            )
-
-            bio_go=bio_go.dropna(subset=["ensembl_gene_id"])
-
-            GTF=age.readGTF("{{gtf}}")
-            GTF["gene_id"]=age.retrieve_GTF_field(field="gene_id",gtf=GTF)
-            GTF["gene_biotype"]=age.retrieve_GTF_field(field="gene_biotype",gtf=GTF)
-            GTF=GTF[["gene_id","gene_biotype"]].drop_duplicates().dropna(subset=["gene_id"])
-            GTF.columns=["ensembl_gene_id","gene_biotype"]
-            GTF=GTF.astype(str)
-            bio_go=bio_go.astype(str)
-            bio_go=pd.merge(GTF,bio_go,on=["ensembl_gene_id"],how="outer")
-            bio_go=bio_go.sort_values(by=["ensembl_gene_id"],ascending=True)
-            bio_go.to_csv("{{deseq2_output}}/annotated/biotypes_go.txt", sep= "\\t", index=None)
-            bio_go.to_csv("{{biotypes_go}}", sep= "\\t", index=None)
-
-        except Exception as e:
-            print("An error occurred:", e,"\\ncontinuing without biomart go annotations.")
-            bio_go=pd.DataFrame(columns=["ensembl_gene_id"])         
-
+    if "{{biomart_dataset}}" :
+        biomart_dataset="{{biomart_dataset}}"
+    elif "{{organism}}" :
+        organism="{{organism}}"
+        biomart_dataset=organism.split("_")[0][0] + organism.split("_")[1] + "_gene_ensembl"
     else:
-        shutil.copy( "{{biotypes_go}}".replace("biotypes_go.txt", "biotypes_go_raw_topgo.txt"), "{{deseq2_output}}/annotated/biotypes_go_raw_topgo.txt" )
-        shutil.copy( "{{biotypes_go}}".replace("biotypes_go.txt", "biotypes_go_raw.txt"), "{{deseq2_output}}/annotated/biotypes_go_raw.txt" )
-        shutil.copy( "{{biotypes_go}}", "{{deseq2_output}}/annotated/biotypes_go.txt")
+        raise Exception("You must provide a biomart_dataset or an organism.")
+
+    organism=server.datasets[ biomart_dataset ]
+    response=organism.search({"attributes":attributes})
+    response=response.content.decode().split("\\n")
+    response=[s.split("\\t") for s in response ]
+    bio_go=pd.DataFrame(response,columns=attributes)
+    bio_go=bio_go.sort_values(by=attributes, ascending=True )
+    bio_go.to_csv("{{biotypes_go}}".replace("biotypes_go.txt", "biotypes_go_raw_topgo.txt"), index=None, sep="\\t")
+    bio_go.to_csv("{{deseq2_output}}/annotated/biotypes_go_raw_topgo.txt", index=None, sep="\\t")
+    bio_go=bio_go[["ensembl_gene_id","go_id","name_1006"]]
+    bio_go.to_csv("{{biotypes_go}}".replace("biotypes_go.txt", "biotypes_go_raw.txt"), index=None, sep="\\t")
+    bio_go.to_csv("{{deseq2_output}}/annotated/biotypes_go_raw.txt", index=None, sep="\\t")
+    bio_go.columns = ["ensembl_gene_id","GO_id","GO_term"]
+    bio_go=bio_go.sort_values(by=["ensembl_gene_id","GO_id"], ascending=True )
+
+    def join_sorted_unique(series):
+        # drop NaNs, cast to str once, dedup while preserving first-seen order, then sort for full determinism
+        vals = pd.Series(series).dropna().astype(str).unique()   # preserves first appearance
+        # vals = sorted(vals)                                      # or omit this line if you prefer original order
+        return "; ".join(vals)
+
+    def CombineAnn(df):
+        return pd.Series(dict(ensembl_gene_id = ("ensembl_gene_id", join_sorted_unique) ,\
+                        GO_id = ("GO_id", join_sorted_unique) ,\
+                        GO_term = ("GO_term", join_sorted_unique)  ,\
+                        ) )
+
+    bio_go = (
+        bio_go.groupby("ensembl_gene_id", sort=False)
+            .agg(
+                ensembl_gene_id=("ensembl_gene_id", "first"),
+                GO_id=("GO_id", join_sorted_unique),
+                GO_term=("GO_term", join_sorted_unique),
+            )
+            .reset_index(drop=True)
+            # ensure column order
+            [["ensembl_gene_id","GO_id","GO_term"]]
+    )
+
+    bio_go=bio_go.dropna(subset=["ensembl_gene_id"])
+
+    GTF=age.readGTF("{{gtf}}")
+    GTF["gene_id"]=age.retrieve_GTF_field(field="gene_id",gtf=GTF)
+    GTF["gene_biotype"]=age.retrieve_GTF_field(field="gene_biotype",gtf=GTF)
+    GTF=GTF[["gene_id","gene_biotype"]].drop_duplicates().dropna(subset=["gene_id"])
+    GTF.columns=["ensembl_gene_id","gene_biotype"]
+    GTF=GTF.astype(str)
+    bio_go=bio_go.astype(str)
+    bio_go=pd.merge(GTF,bio_go,on=["ensembl_gene_id"],how="outer")
+
+    # except Exception as e:
+    #     print("An error occurred:", e,"\\ncontinuing without biomart go annotations.")
+    #     bio_go=pd.DataFrame(columns=["ensembl_gene_id"])
+
+    bio_go=bio_go.sort_values(by=["ensembl_gene_id"],ascending=True)
+    bio_go.to_csv("{{deseq2_output}}/annotated/biotypes_go.txt", sep= "\\t", index=None)
+    bio_go.to_csv("{{biotypes_go}}", sep= "\\t", index=None)     
+
+else:
+    shutil.copy( "{{biotypes_go}}".replace("biotypes_go.txt", "biotypes_go_raw_topgo.txt"), "{{deseq2_output}}/annotated/biotypes_go_raw_topgo.txt" )
+    shutil.copy( "{{biotypes_go}}".replace("biotypes_go.txt", "biotypes_go_raw.txt"), "{{deseq2_output}}/annotated/biotypes_go_raw.txt" )
+    shutil.copy( "{{biotypes_go}}", "{{deseq2_output}}/annotated/biotypes_go.txt")
 """,
     var={
         "biomart_dataset": "",
@@ -105,7 +107,7 @@ if "{{biomart_host}}" != "None":
         "deseq2_output":"",
         "biotypes_go":"'<path/to/biotypes_go.txt' inclusive 'biotypes_go.txt'"
     },
-    container="mpgagebioinformatics/rnaseq.python:3.8-8",
+    container=AGEPY_IMAGE,
     manager_slurm={ "-c": 1, "--mem": "8GB", "-t": "1:00:00" }
 )
 
@@ -409,6 +411,7 @@ fpkm.deseq = as.data.frame(fpkm(dds))
 names(fpkm.deseq) = paste0('fpkm.', names(fpkm.deseq))
 res_counts = merge(res_counts, fpkm.deseq, by = 'row.names', all = TRUE)
 res_counts = res_counts[,-1]
+head(res_counts)
 write.table(res_counts, "{{deseq2_output}}/all_results_stats.tsv", sep = "\\t", quote = F, row.names = F)
 openxlsx::write.xlsx(res_counts, "{{deseq2_output}}/all_results_stats.xlsx", row.names = F, col.names = TRUE)
 
@@ -903,13 +906,848 @@ saveWorkbook(wb, fout, overwrite = TRUE)
     manager_slurm={ "-c": 1, "--mem": "8GB", "-t": "4:00:00" }
 )
 
+# qc_plots=jawm.Process(
+#     name="qc_plots",
+#     when=lambda p: not os.path.isfile( os.path.join( p.var["deseq2_output"], "qc_plots" , "pca_all_samples.pdf"  ) ),
+#     script="""\
+# #!/bin/bash
+# mkdir -p {{deseq2_output}}/qc_plots/
+# QC_plots -o {{deseq2_output}}/qc_plots/ -de {{deseq2_output}}/ -s {{deseq2_output}}/samples_MasterTable.txt -t {{deseq2_output}} -sp {{spec}}
+# """,
+#     desc={
+#         "deseq2_output":"",
+#         "spec": ""
+#     },
+#     container="mpgagebioinformatics/rnaseq.python:3.8-8",
+#     manager_slurm={ "-c": 1, "--mem": "8GB", "-t": "4:00:00" }
+# )
+
+
 qc_plots=jawm.Process(
     name="qc_plots",
     when=lambda p: not os.path.isfile( os.path.join( p.var["deseq2_output"], "qc_plots" , "pca_all_samples.pdf"  ) ),
     script="""\
-#!/bin/bash
-mkdir -p {{deseq2_output}}/qc_plots/
-QC_plots -o {{deseq2_output}}/qc_plots/ -de {{deseq2_output}}/ -s {{deseq2_output}}/samples_MasterTable.txt -t {{deseq2_output}} -sp {{spec}}
+#!/usr/bin/env python3
+
+from ast import arg
+import os
+import sys
+import argparse
+
+sys.stdout.flush()
+
+# parser = argparse.ArgumentParser(description="Outputs multiple QC plots for differential expression data", \
+# formatter_class = argparse.ArgumentDefaultsHelpFormatter)
+# parser.add_argument("-o", "--output", help="/path/to/output/prefix")
+# parser.add_argument("-de", "--DiffExpFolder", help="/path/to/diff_exp/folder")
+# parser.add_argument("-s", "--sampleConditions", help="/path/to/sample/conditions/file")
+# parser.add_argument("-t", "--topFolder", help="/path/to/top/folder/of/project")
+# parser.add_argument("-sp", "--species", help="Supported values - c_albicans_sc5314,celegans,hsapiens,dmelanogaster,mmusculus,nfurzeri,scerevisiae")
+
+# args = parser.parse_args()
+
+import os
+import AGEpy as age
+import pandas as pd
+import numpy as np
+import matplotlib
+import seaborn as sns
+
+import matplotlib.pyplot as plt
+import scipy
+from  matplotlib.colors import LinearSegmentedColormap
+from scipy import stats
+from sklearn.cluster import KMeans
+from sklearn import metrics
+from scipy.spatial.distance import cdist
+import multiprocessing as mp
+from collections import defaultdict
+from sklearn.metrics.pairwise import euclidean_distances
+from matplotlib.backends.backend_pdf import PdfPages
+from scipy.cluster.hierarchy import fcluster
+import scipy.stats as stats
+from matplotlib.pyplot import rc
+from scipy.stats import hypergeom
+import itertools
+import sys
+import statsmodels.stats.multitest as multi
+from sklearn.decomposition import PCA
+from sklearn import preprocessing
+from itertools import cycle
+import scipy.spatial.distance
+
+from matplotlib import pyplot as plt
+from scipy.cluster.hierarchy import dendrogram, linkage
+
+#%matplotlib inline
+
+###### SETTING VARIABLES #######
+
+top = "{{deseq2_output}}/"
+qcp = "{{deseq2_output}}/qc_plots/" 
+deg = "{{deseq2_output}}/"
+spec = "{{spec}}"
+samples_treatment = "{{deseq2_output}}/samples_MasterTable.txt"
+
+if not os.path.exists(top):
+    raise ValueError("Error: Invalid path to Top Folder")
+
+if not os.path.exists(deg):
+    raise ValueError("Error: Invalid path to Differential Expression Folder")
+
+if not os.path.exists(samples_treatment):
+    raise ValueError("Error: Invalid path to Sample Conditions File")
+
+if not os.path.isdir(qcp):
+    os.makedirs( qcp )
+
+##### PLOTTING #######
+os.chdir(top)
+os.getcwd()
+
+df_original=pd.read_excel(deg+"/all_res_counts.xlsx", index_col=0, engine='openpyxl')
+print(len(df_original))
+df_original.head()
+
+samp_df=pd.read_csv(samples_treatment, sep="\\t")
+samp_df=samp_df.rename(columns={'Unnamed: 0':'Samples'})
+group_col=samp_df.columns.tolist()[1]
+
+samples_dict={}
+conditions=list(set([s for s in samp_df[group_col].tolist()]))
+for c in conditions:
+    samples=samp_df.loc[samp_df[group_col] == c , 'Samples'].tolist()
+    samples_dict[c]=samples
+
+
+df_norm=np.log10(df_original+1)
+df_norm.head()
+
+font = {'family' : 'Serif',
+            'weight' : 'semibold',
+            'size'   : 12}
+font_ = {'family' : 'Serif',
+            'weight' : 'semibold',
+            'size'   : 14}
+
+
+#### GROUPED KDE ####
+
+fig = plt.figure( frameon=False,figsize=(7,7))
+
+for key in samples_dict.keys():
+    dict_value=samples_dict[key]
+    values=df_norm[dict_value].values.tolist()
+    values=[item for sublist in values for item in sublist]
+    values=[s for s in values if s != 0]
+    sns.set()
+    sns.kdeplot(values, shade=True, label=key)
+
+plt.xlabel("log10(counts+1)",font_)
+plt.ylabel("Density",font_)
+plt.legend(loc='best', prop=font)
+plt.title('Genes', font_)
+plt.savefig(qcp+"/grouped.KDE.pdf", dpi=600,bbox_inches='tight', pad_inches=0.1,format='pdf')   
+plt.show()
+
+#### SAMPLE KDE ####
+
+matplotlib.rc('font', **font)
+
+fig = plt.figure( frameon=False,figsize=(7,7))
+
+for f in df_norm.columns.tolist():
+    values=[s for s in df_norm[f].tolist()]
+    values=[s for s in values if s != 0]    
+    sns.set()
+    sns.kdeplot(values, shade=True, label=f)
+
+plt.xlabel("log10(counts+1)",font_)
+plt.ylabel("Density",font_)
+plt.title('Genes', font_)
+plt.legend(bbox_to_anchor=(1, 1), prop=font_)
+plt.savefig(qcp+"/sample.KDE.pdf", dpi=600,bbox_inches='tight', pad_inches=0.1,format='pdf')   
+plt.show()
+
+#### GROUPED BAR PLOTS ####
+
+matplotlib.rc('font', **font)
+
+fig = plt.figure( frameon=False,figsize=(7,7))
+
+medianprops = dict(color='black', linewidth=1)
+#flierprops = dict(marker='D', markerfacecolor='black', markersize=6,linestyle='none')
+
+cond_values=[]
+for key in samples_dict.keys():
+    dict_value=samples_dict[key]
+    values=df_norm[dict_value].values.tolist()
+    values=[item for sublist in values for item in sublist]
+    values=[s for s in values if s != 0]
+    cond_values.append(values)
+  
+sns.set()
+bplot=plt.boxplot(cond_values, labels=conditions, patch_artist=True, showfliers=True, medianprops=medianprops)
+plt.xticks(fontfamily='Serif')
+plt.xlabel("condition",font_)
+plt.ylabel("log10(counts+1)",font_)
+palette = sns.color_palette("husl", len(conditions))
+for patch, color in zip(bplot['boxes'], palette):
+        patch.set_facecolor(color)
+
+plt.savefig(qcp+"/grouped.barPlots.pdf", dpi=600,bbox_inches='tight', pad_inches=0.1,format='pdf')   
+plt.show()
+
+#### SAMPLE BAR PLOTS ####
+
+samples=[col for col in df_norm.columns.tolist()]
+values=[]
+
+for col in df_norm.columns.tolist():
+    tmp=df_norm[col].values.tolist()
+    tmp=[s for s in tmp if s != 0]
+    values.append(tmp)
+
+matplotlib.rc('font', **font)
+
+fig = plt.figure(frameon=False,figsize=(10,7))
+
+sns.set()
+bplot=plt.boxplot(values, labels=samples, patch_artist=True, showfliers=True, medianprops=medianprops)
+plt.xticks(rotation=90, fontfamily='Serif')
+plt.xlabel("condition",font_)
+plt.ylabel("log10(counts+1)",font_)
+
+palette = sns.color_palette("husl", len(samples))
+for patch, color in zip(bplot['boxes'], palette):
+        patch.set_facecolor(color)
+
+plt.savefig(qcp+"/sample.barPlots.pdf", dpi=600,bbox_inches='tight', pad_inches=0.1,format='pdf')
+plt.show()
+
+#### SCATTER PLOT MATRIX ####
+
+file_name=qcp+"/count.matrix.scatter.plot.pdf"
+
+pdf = PdfPages(file_name)
+
+w=len(samples_dict.keys())
+l=len(samples_dict.keys())
+i=1
+
+fig = plt.figure(figsize=(w*12,l*12))
+
+for comp1 in samples_dict.keys():
+    value_1=samples_dict[comp1]
+    for comp2 in samples_dict.keys():
+        value_2=samples_dict[comp2]
+        if comp1 == comp2:            
+            sns.set()
+            ax = fig.add_subplot(l,w,i)
+            values=df_norm[value_1].values.tolist()
+            values=[item for sublist in values for item in sublist]
+            values=[s for s in values if s != 0]
+            sns.kdeplot(values)
+            #ax.set_xlabel("log10(counts+1)",font_)
+            ax.set_ylabel(comp1,font_)
+            ax.set_title(comp2, font)
+            i=i+1
+        else:
+            cols_y=value_1
+            cols_x=value_2
+            tmp = df_norm[value_1 + value_2]
+            tmp = tmp[ tmp != 0]
+            ax = fig.add_subplot(l,w,i)
+            x=tmp[cols_x].mean(axis = 1)
+            y=tmp[cols_y].mean(axis = 1)
+            ax.scatter( x, y , color="tab:blue", alpha=0.5, s=1,)
+            ax.set_xlabel("log10(counts+1)",font_)
+            ax.set_ylabel(comp1+"\\n\\nlog10(counts+1)",font_)
+            #ax.legend(loc='best', prop=font_)
+            ax.set_title(comp2, font)
+            i=i+1
+        if i == w*l+1:
+            plt.savefig(pdf, dpi=300, bbox_inches='tight', pad_inches=0.1,format='pdf')
+	    #plt.show()
+            #plt.close()
+            i=1
+            fig = plt.figure(figsize=(w*12,l*12))
+if i != 1:
+    plt.savefig(pdf, dpi=300, bbox_inches='tight', pad_inches=0.1,format='pdf')
+    #plt.show()
+    #plt.close()
+    i=1
+    fig = plt.figure(figsize=(w*12,l*12))
+pdf.close()
+
+#### DENDROGRAM ####
+
+df_norm.T.index
+
+plt.figure(figsize=(10, 10))
+plt.ylabel('distance')
+dendrogram(linkage(df_norm.T, 'ward'), labels=df_norm.T.index, leaf_rotation=90.0)
+plt.savefig(qcp+"/sample.dendrogram.pdf", dpi=600,bbox_inches='tight', pad_inches=0.1,format='pdf')   
+plt.show()
+
+path=deg+"/annotated/"
+data_files=os.listdir(path)
+data_files=[s for s in data_files if ".results.tsv" in s]
+
+conditions_new=[s.split("_",1)[1].split(".",1)[0].split("_vs_") for s in data_files]
+conditions_new=[item for sublist in conditions_new for item in sublist]
+conditions_new=list(set(conditions_new))
+conditions_new
+
+#### MA PLOTS ####
+
+file_name=qcp+"/MA.plots.pdf"
+
+pdf = PdfPages(file_name)
+
+w=len(conditions_new)
+l=len(conditions_new)
+i=1
+
+fig = plt.figure(figsize=(w*12,l*12))
+
+for comp1 in conditions_new:
+    for comp2 in conditions_new:
+        if comp1 == comp2:
+            
+            sns.set_style("whitegrid")
+            ax = fig.add_subplot(l,w,i)
+            
+            ax.set_xlabel("log10(baseMean)",font_)
+            ax.set_ylabel(comp1+"\\n\\nlog2FoldChange",font_)
+            ax.set_title(comp2, font)
+            
+            i=i+1
+            
+        else:
+            file=[s for s in data_files if (comp1+'.' in s or comp1+'_' in s) and (comp2+'.' in s or comp2+'_' in s) ]
+            lfc_comp=[s.split(".results.tsv")[0] for s in file]
+            df_tmp=pd.read_csv(path+file[0], sep="\\t")
+            
+            ax = fig.add_subplot(l,w,i)
+            
+            tmp=df_tmp[df_tmp["padj"]>=0.05]
+            x=tmp["baseMean"].tolist()
+            y=tmp["log2FoldChange"].tolist()
+            x=[ np.log10(s+1) for s in x ]
+            ax.scatter( x, y , color="k", alpha=0.5, s=1, label='NonSignificant')
+
+            tmp=df_tmp[df_tmp["padj"]<0.05]
+            x=tmp["baseMean"].tolist()
+            y=tmp["log2FoldChange"].tolist()
+            x=[ np.log10(s+1) for s in x ]
+            ax.scatter( x, y , color="r", alpha=0.5, s=1, label='Significant')
+
+            ax.set_xlabel("log10(baseMean)",font_)
+            ax.set_ylabel(comp1+"\\n\\nlog2FoldChange("+lfc_comp[0]+")",font_)
+            ax.legend(loc='best', prop=font_)
+            ax.set_title(comp2, font)
+
+
+            i=i+1
+        
+        if i == w*l+1:
+            plt.savefig(pdf, dpi=300, bbox_inches='tight', pad_inches=0.1,format='pdf')
+	    #plt.show()
+            #plt.close()
+            i=1
+            fig = plt.figure(figsize=(w*12,l*12))
+
+if i != 1:
+    plt.savefig(pdf, dpi=300, bbox_inches='tight', pad_inches=0.1,format='pdf')
+    #plt.show()
+    #plt.close()
+    i=1
+    fig = plt.figure(figsize=(w*12,l*12))
+
+pdf.close()
+
+#### VOLCANO PLOTS ####
+
+file_name=qcp+"/volcano.plots.pdf"
+
+pdf = PdfPages(file_name)
+
+w=len(conditions_new)
+l=len(conditions_new)
+i=1
+
+fig = plt.figure(figsize=(w*12,l*12))
+
+for comp1 in conditions_new:
+    for comp2 in conditions_new:
+        if comp1 == comp2:
+            
+            sns.set_style("whitegrid")
+            ax = fig.add_subplot(l,w,i)
+            
+            ax.set_xlabel("log2FoldChange",font_)
+            ax.set_ylabel(comp1+"\\n\\n-log10(Adj.P.value)",font_)
+            ax.set_title(comp2, font)
+            
+            i=i+1
+            
+        else:
+            file=[s for s in data_files if (comp1+'.' in s or comp1+'_' in s) and (comp2+'.' in s or comp2+'_' in s) ]
+            lfc_comp=[s.split(".results.tsv")[0] for s in file]
+            df_tmp=pd.read_csv(path+file[0], sep="\\t")
+            
+            ax = fig.add_subplot(l,w,i)
+            
+            tmp=df_tmp[df_tmp["padj"]>=0.05]
+            x=tmp["log2FoldChange"].tolist()
+            y=tmp["padj"].tolist()
+            y=[ -np.log10(s+1) for s in y ]
+            ax.scatter( x, y , color="k", alpha=0.5, s=1, label='NonSignificant')
+
+            tmp=df_tmp[df_tmp["padj"]<0.05]
+            x=tmp["log2FoldChange"].tolist()
+            y=tmp["padj"].tolist()
+            y=[ -np.log10(s+1) for s in y ]
+            ax.scatter( x, y , color="r", alpha=0.5, s=1, label='Significant')
+
+            ax.set_xlabel("log2FoldChange("+lfc_comp[0]+")",font_)
+            ax.set_ylabel(comp1+"\\n\\n-log10(Adj.P.value)",font_)
+            ax.legend(loc='best', prop=font_)
+            ax.set_title(comp2, font)
+
+            i=i+1
+        
+        if i == w*l+1:
+            plt.savefig(pdf, dpi=300, bbox_inches='tight', pad_inches=0.1,format='pdf')
+	    #plt.show()
+            #plt.close()
+            i=1
+            fig = plt.figure(figsize=(w*12,l*12))
+
+if i != 1:
+    plt.savefig(pdf, dpi=300, bbox_inches='tight', pad_inches=0.1,format='pdf')
+    #plt.show()
+    #plt.close()
+    i=1
+    fig = plt.figure(figsize=(w*12,l*12))
+
+pdf.close()
+
+#### P.VALUE DISTRIBUTION ####
+
+file_name=qcp+"/p.value.dist.pdf"
+
+pdf = PdfPages(file_name)
+
+w=len(conditions_new)
+l=len(conditions_new)
+i=1
+
+fig = plt.figure(figsize=(w*12,l*12))
+
+for comp1 in conditions_new:
+    for comp2 in conditions_new:
+        if comp1 == comp2:
+            
+            sns.set_style("whitegrid")
+            ax = fig.add_subplot(l,w,i)
+            
+            ax.set_xlabel("P.Value",font_)
+            ax.set_ylabel(comp1+"\\n\\nFrequency",font_)
+            ax.set_title(comp2, font)
+            
+            i=i+1
+            
+        else:
+            file=[s for s in data_files if (comp1+'.' in s or comp1+'_' in s) and (comp2+'.' in s or comp2+'_' in s) ]
+            df_tmp=pd.read_csv(path+file[0], sep="\\t")
+            
+            ax = fig.add_subplot(l,w,i)
+            
+            df_tmp['pvalue'].hist(bins=30)
+            
+            ax.set_xlabel("P.Value",font_)
+            ax.set_ylabel(comp1+"\\n\\nFrequency",font_)
+            ax.set_title(comp2, font)
+
+            i=i+1
+        
+        if i == w*l+1:
+            plt.savefig(pdf, dpi=300, bbox_inches='tight', pad_inches=0.1,format='pdf')
+	    #plt.show()
+            #plt.close()
+            i=1
+            fig = plt.figure(figsize=(w*12,l*12))
+
+if i != 1:
+    plt.savefig(pdf, dpi=300, bbox_inches='tight', pad_inches=0.1,format='pdf')
+    #plt.show()
+    #plt.close()
+    i=1
+    fig = plt.figure(figsize=(w*12,l*12))
+
+pdf.close()
+
+#### Q.VALUE DISTRIBUTION ####
+
+file_name=qcp+"/q.value.dist.pdf"
+
+pdf = PdfPages(file_name)
+
+w=len(conditions_new)
+l=len(conditions_new)
+i=1
+
+fig = plt.figure(figsize=(w*12,l*12))
+
+for comp1 in conditions_new:
+    for comp2 in conditions_new:
+        if comp1 == comp2:
+            
+            sns.set_style("whitegrid")
+            ax = fig.add_subplot(l,w,i)
+            
+            ax.set_xlabel("Q.Value",font_)
+            ax.set_ylabel(comp1+"\\n\\nFrequency",font_)
+            ax.set_title(comp2, font)
+            
+            i=i+1
+            
+        else:
+            file=[s for s in data_files if (comp1+'.' in s or comp1+'_' in s) and (comp2+'.' in s or comp2+'_' in s) ]
+            df_tmp=pd.read_csv(path+file[0], sep="\\t")
+            
+            ax = fig.add_subplot(l,w,i)
+            
+            df_tmp['padj'].hist(bins=30)
+            
+            ax.set_xlabel("Q.Value",font_)
+            ax.set_ylabel(comp1+"\\n\\nFrequency",font_)
+            ax.set_title(comp2, font)
+
+            i=i+1
+        
+        if i == w*l+1:
+            plt.savefig(pdf, dpi=300, bbox_inches='tight', pad_inches=0.1,format='pdf')
+	    #plt.show()
+            #plt.close()
+            i=1
+            fig = plt.figure(figsize=(w*12,l*12))
+
+if i != 1:
+    plt.savefig(pdf, dpi=300, bbox_inches='tight', pad_inches=0.1,format='pdf')
+    #plt.show()
+    #plt.close()
+    i=1
+    fig = plt.figure(figsize=(w*12,l*12))
+
+pdf.close()
+
+#### GENESET LEVEL PLOTS ####
+
+genes=[]
+for f in data_files:
+    tmp=pd.read_csv(path+f, sep="\\t")
+    tmp_genes=tmp.loc[tmp['padj'] < 0.05 , 'ensembl_gene_id'].tolist()
+    for g in tmp_genes:
+        if g not in genes:
+            genes.append(g)
+            
+len(genes)
+
+df_heat=df_norm.loc[df_norm.index.isin(genes),]
+df_heat.head()
+
+#print(conditions)
+
+for key in samples_dict.keys():
+    value=samples_dict[key]
+    df_heat['mean('+key+')']=df_heat[value].mean(axis=1)
+df_heat.head()
+
+#### GROUPED HEATMAP ####
+
+matplotlib.rc('font', **font)
+
+#fig = plt.figure( frameon=False,figsize=(14,14))
+cm=sns.clustermap(df_heat[[s for s in df_heat.columns.tolist() if 'mean' in s]],figsize=(14,14))
+cm.ax_row_dendrogram.set_visible(False)
+cm.ax_col_dendrogram.set_visible(False)
+plt.savefig(qcp+"/grouped.heatMap.pdf", dpi=600,bbox_inches='tight', pad_inches=0.1,format='pdf')   
+plt.show()
+
+#### SAMPLE HEATMAP ####
+
+matplotlib.rc('font', **font)
+
+#fig = plt.figure( frameon=False,figsize=(14,14))
+cm=sns.clustermap(df_heat[[s for s in df_heat.columns.tolist() if 'mean' not in s]],figsize=(14,16))
+cm.ax_row_dendrogram.set_visible(False)
+cm.ax_col_dendrogram.set_visible(False)
+plt.savefig(qcp+"/sample.heatMap.pdf", dpi=600,bbox_inches='tight', pad_inches=0.1,format='pdf')   
+plt.show()
+
+#### SIGNIFICANT FEATURES MATRIX ####
+
+df_sig=pd.DataFrame(columns=conditions_new, index=conditions_new)
+
+for comp1 in conditions_new:
+    for comp2 in conditions_new:
+        if comp1 == comp2:
+            sig_fearures=0
+            df_sig.loc[comp1,comp2]=sig_fearures
+        else:
+            file=[s for s in data_files if (comp1+'.' in s or comp1+'_' in s) and (comp2+'.' in s or comp2+'_' in s) ]
+            tmp=pd.read_csv(path+file[0], sep="\\t")
+            sig_fearures=len(tmp.loc[tmp['padj'] < 0.05,])
+            df_sig.loc[comp1,comp2]=sig_fearures
+        
+df_sig
+
+mask = np.triu(np.ones_like(df_sig.astype(float), dtype=np.bool))
+
+matplotlib.rc('font', **font)
+
+fig = plt.figure( frameon=False,figsize=(9,7))
+
+sns.heatmap(df_sig.astype(float),annot=True,fmt='.10g', mask=mask)
+
+plt.title('No of significant features', font_)
+plt.yticks(rotation=0) 
+
+plt.savefig(qcp+"/sigFeatures.matrix.pdf", dpi=600,bbox_inches='tight', pad_inches=0.1,format='pdf')   
+plt.show()
+
+df_corr=df_norm.copy()
+for key in samples_dict.keys():
+    value=samples_dict[key]
+    df_corr['mean('+key+')']=df_corr[value].mean(axis=1)
+
+df_corr.head()
+
+#### GROUP DISTANCE MATRIX ####
+
+dist=metrics.pairwise_distances(np.array(df_corr[[s for s in df_corr.columns.tolist() if 'mean' in s]].T))
+
+df_dist=pd.DataFrame(dist, columns=[s.split("(")[1].strip(")") for s in df_corr.columns.tolist() if 'mean' in s], index=[s.split("(")[1].strip(")") for s in df_corr.columns.tolist() if 'mean' in s])
+matplotlib.rc('font', **font)
+
+annot = {'family' : 'Serif',
+         'weight' : 'semibold',
+         'size'   : 12}
+
+fig = plt.figure( frameon=False,figsize=(12,10))
+
+sns.heatmap(df_dist.T,annot=True,fmt='.5g',annot_kws=annot)
+
+plt.title('Group Distance Matrix', font_)
+
+plt.savefig(qcp+"/group.distance.matrix.pdf", dpi=600,bbox_inches='tight', pad_inches=0.1,format='pdf')   
+plt.show()
+
+#### SAMPLE DISTANCE MATRIX ####
+
+dist_all=metrics.pairwise_distances(np.array(df_corr[[s for s in df_corr.columns.tolist() if 'mean' not in s]].T))
+
+df_dist_all=pd.DataFrame(dist_all, columns=[s for s in df_corr.columns.tolist() if 'mean' not in s], index=[s for s in df_corr.columns.tolist() if 'mean' not in s])
+matplotlib.rc('font', **font)
+
+annot = {'family' : 'Serif',
+         'weight' : 'semibold',
+         'size'   : 10}
+
+fig = plt.figure( frameon=False,figsize=(12,10))
+
+sns.heatmap(df_dist_all.T,annot=True,fmt='.3g',annot_kws=annot)
+
+plt.title('Sample Distance Matrix', font_)
+
+plt.savefig(qcp+"/sample.distance.matrix.pdf", dpi=600,bbox_inches='tight', pad_inches=0.1,format='pdf')
+plt.show()
+
+#### PCA ####
+
+file_name=qcp+"/pca.pdf"
+
+pdf = PdfPages(file_name)
+
+w=len(conditions_new)
+l=len(conditions_new)
+i=1
+
+fig = plt.figure(figsize=(w*12,l*12))
+
+for comp1 in conditions_new:
+    for comp2 in conditions_new:
+        if comp1 == comp2:
+            
+            sns.set_style("darkgrid")
+            ax = fig.add_subplot(l,w,i)
+            
+            ax.set_xlabel("Component1",font_)
+            ax.set_ylabel(comp1+"\\n\\nComponent2",font_)
+            ax.set_title(comp2, font)
+            
+            i=i+1
+            
+        else:
+            file=[s for s in data_files if (comp1+'.' in s or comp1+'_' in s) and (comp2+'.' in s or comp2+'_' in s) ]
+            df_tmp=pd.read_csv(path+file[0], sep="\t")
+            
+            ax = fig.add_subplot(l,w,i)
+            
+            data=df_tmp.copy()
+            
+            #cols=[s for s in data.columns if comp1 in s or comp2 in s]
+            #data_pca=data[cols]
+            if spec != "c_albicans_sc5314":
+                cols_to_exclude=['ensembl_gene_id','gene_name', 'baseMean','log2FoldChange','lfcSE','pvalue','padj','gene_biotype','GO_id','GO_term']
+            else:
+                cols_to_exclude=['ensembl_gene_id','gene_name', 'baseMean','log2FoldChange','lfcSE','pvalue','padj']
+            print(data)
+            data_pca=data.drop(cols_to_exclude, axis=1)
+            data_pca=np.log10(data_pca + 1)
+            data_pca=data_pca.set_index(data['ensembl_gene_id'])
+            #data_pca.head()
+
+            df_pca=data_pca.T.reset_index()
+            #df_pca
+
+            #print(df_pca.shape)
+
+            df_pca.set_index('index', inplace=True)
+            df_pca.index.names = ['Sample']
+
+            pca = PCA(copy=True, iterated_power='auto', n_components=2, random_state=None,svd_solver='auto', tol=0.0, whiten=False)
+
+            #scaling the values
+            df_pca_scaled = preprocessing.scale(df_pca, axis = 1)
+
+            projected=pca.fit_transform(df_pca_scaled)
+
+            #print(pca.explained_variance_ratio_)
+
+            tmp=pd.DataFrame(projected)
+            tmp.rename(columns={0: 'Component 1',1: 'Component 2'}, inplace=True)
+            tmp.to_excel(qcp+"/"+file[0].replace(".results.tsv","_pca.xlsx"), index=None)
+            #tmp.head()
+
+            final_pca=pd.merge(df_pca.reset_index(),tmp,left_index=True,right_index=True)
+            #final_pca.head()
+
+            for s in final_pca['Sample'].tolist():
+                for key in samples_dict.keys():
+                    value=samples_dict[key]
+                    if s in value:
+                        final_pca.loc[final_pca['Sample'] == s,'expt'] = key
+
+            font = {'family' : 'serif',
+                    'weight' : 'bold',
+                    'size'   : 12}
+
+
+            color_gen = cycle(('blue', 'red', 'green', 'pink','yellow'))
+            
+            for lab in set(final_pca['expt']):
+                plt.scatter(final_pca.loc[final_pca['expt'] == lab, 'Component 1'], 
+                            final_pca.loc[final_pca['expt'] == lab, 'Component 2'], 
+                            c=next(color_gen),
+                            label=lab)
+
+            ax.set_xlabel('Component 1  - ' + str(pca.explained_variance_ratio_[0]*100)+ " % ", fontdict=font)
+            ax.set_ylabel(comp1+"\\n\\nComponent 2  - "+ str(pca.explained_variance_ratio_[1]*100)+ "  % ", fontdict=font)
+            #ax.set_xticks(fontsize=14)
+            #ax.set_yticks(fontsize=14)
+            ax.legend(loc='best', fontsize=14, prop=font_)
+            ax.set_title(comp2, fontdict=font)
+
+            i=i+1
+        
+        if i == w*l+1:
+            plt.savefig(pdf, dpi=300, bbox_inches='tight', pad_inches=0.1,format='pdf')
+	    #plt.show()
+            #plt.close()
+            i=1
+            fig = plt.figure(figsize=(w*12,l*12))
+
+if i != 1:
+    plt.savefig(pdf, dpi=300, bbox_inches='tight', pad_inches=0.1,format='pdf')
+    #plt.show()
+    #plt.close()
+    i=1
+    fig = plt.figure(figsize=(w*12,l*12))
+
+pdf.close()
+
+
+
+### PCA all ####
+
+file_name=qcp+"/pca_all_samples.pdf"
+
+pdf = PdfPages(file_name)
+
+plt.figure(figsize=(14,14))
+
+#sns.set_style("darkgrid")
+
+pca_data = df_heat[[s for s in df_heat.columns.tolist() if 'mean' not in s]]
+df_pca=pca_data.T.reset_index()
+
+df_pca.set_index('index', inplace=True)
+df_pca.index.names = ['Sample']
+
+pca = PCA(copy=True, iterated_power='auto', n_components=2, random_state=None,svd_solver='auto', tol=0.0, whiten=False)
+
+#scaling the values
+df_pca_scaled = preprocessing.scale(df_pca, axis = 1)
+
+projected=pca.fit_transform(df_pca_scaled)
+#print(pca.explained_variance_ratio_)
+
+tmp=pd.DataFrame(projected)
+tmp.rename(columns={0: 'Component 1',1: 'Component 2'}, inplace=True)
+#tmp.to_excel(qcp+"/pca_comp_all_samples.xlsx", index=True, header=True)
+#tmp.head()
+
+final_pca=pd.merge(df_pca.reset_index(),tmp,left_index=True,right_index=True)
+#final_pca.head()
+
+for s in final_pca['Sample'].tolist():
+    for key in samples_dict.keys():
+        value=samples_dict[key]
+        if s in value:
+            final_pca.loc[final_pca['Sample'] == s,'expt'] = key
+
+font = {'family' : 'serif',
+        'weight' : 'bold',
+        'size'   : 12}
+
+color_gen = cycle(('blue', 'red', 'green', 'pink','yellow'))
+color_gen = sns.color_palette(None, len(conditions))
+
+plot_data = final_pca[["Sample", "Component 1", "Component 2", "expt"]]
+plot_data.to_excel(qcp+"/pca_comp_all_samples.xlsx", index=None)
+
+# map group color
+plot_data['color'] = plot_data['expt'].map(dict(zip(set(plot_data["expt"]), color_gen)))
+
+for lab in set(plot_data['expt']):
+    scatter = plt.scatter(plot_data.loc[plot_data['expt'] == lab, 'Component 1'],
+    plot_data.loc[plot_data['expt'] == lab, 'Component 2'],
+    c=plot_data.loc[plot_data['expt'] == lab, 'color'],
+    label=lab)
+
+plt.legend(handles=scatter.legend_elements()[0], labels=set(plot_data["expt"]), title = 'Group')
+
+plt.xlabel('Component 1  - ' + str(pca.explained_variance_ratio_[0]*100)+ " % ", fontdict=font)
+plt.ylabel('Component 2  - ' + str(pca.explained_variance_ratio_[1]*100)+ "  % ", fontdict=font)
+plt.title("PCA of all Samples", font)
+
+plt.savefig(pdf, dpi=300, bbox_inches='tight', pad_inches=0.1,format='pdf')
+
+pdf.close()
 """,
     desc={
         "deseq2_output":"",
@@ -918,6 +1756,10 @@ QC_plots -o {{deseq2_output}}/qc_plots/ -de {{deseq2_output}}/ -s {{deseq2_outpu
     container="mpgagebioinformatics/rnaseq.python:3.8-8",
     manager_slurm={ "-c": 1, "--mem": "8GB", "-t": "4:00:00" }
 )
+
+
+
+
 
 get_ip=jawm.Process(
     name="get_ip",
