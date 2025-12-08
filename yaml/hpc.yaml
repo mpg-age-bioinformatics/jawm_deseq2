@@ -5,6 +5,10 @@
   environment_apptainer: { "-B":"/nexus:/nexus" }
   manager: slurm
   manager_slurm: { "-p":"cluster,dedicated" }
+  # before_script: "module load apptainer"
+  # manager_slurm: {"--ntasks-per-core":"2", "-p":"general,small" }
+  parallel: True
+
 
 - scope: process
   name:
