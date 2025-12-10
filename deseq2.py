@@ -1,5 +1,6 @@
 import jawm
 import os
+from pathlib import Path
 
 AGEPY_IMAGE="mpgagebioinformatics/agepy:7c412ae"
 
@@ -2042,54 +2043,34 @@ rm -rf {{deseq2_output}}/annotated/string.running
     container=""
 )
 
-upload_paths=jawm.Process(
-    name="upload_paths",
-    when=True,
-    script="""\
-rm -rf upload.txt
 
-cd {{deseq2_output}}/annotated
+def report_files(deseq2_output) :
+    report_paths={}
+    dic={ 
+        os.path.join( deseq2_output, "annotated") : { 
+            "deseq2":"*.results.xlsx",
+            "david":"*.DAVID.*",
+            "rcistarget":" *.RcisTarget.*",
+            "topgo":"*.topGO.* "
+            },
+        os.path.join( deseq2_output, "qc_plots") : { 
+            "qc_plots":"*.topGO.*"
+            }
+        }
 
-for f in $(ls *.results.xlsx) ; do echo "deseq2 $(readlink -f ${f})" >>  upload.txt_ ; done
-echo "deseq2 $(readlink -f significant.xlsx)" >>  upload.txt_
-echo "deseq2 $(readlink -f masterTable_annotated.xlsx)" >>  upload.txt_
+    for path in dic :
+        directory = Path( path )
+        for folder in dic[path] :
+            files=[ f.resolve() for f in directory.glob( dic[path][folder] ) ]
+            if files :
+                report_paths[folder]=files
 
-if [[ $(ls  | grep cytoscape) ]] ; then
-  for f in $(ls *.cytoscape.* ) ; do echo "cytoscape $(readlink -f ${f})" >>  upload.txt_ ; done
-fi
+    return report_paths
 
-if [[ $(ls  | grep DAVID) ]] ; then
-  for f in $(ls *.DAVID.* ) ; do echo "david $(readlink -f ${f})" >>  upload.txt_ ; done
-fi
-
-if [[ $(ls  | grep RcisTarget) ]] ; then
-  for f in $(ls *.RcisTarget.* ) ; do echo "rcistarget $(readlink -f ${f})" >>  upload.txt_ ; done
-fi
-
-if [[ $(ls  | grep topGO) ]] ; then
-  for f in $(ls *.topGO.* ) ; do echo "topgo $(readlink -f ${f})" >>  upload.txt_ ; done
-fi
-
-uniq upload.txt_ upload.txt 
-rm upload.txt_
-
-cd {{deseq2_output}}/qc_plots
-rm -rf upload.txt 
-for f in $(ls *.* | grep -v upload.txt) ; do echo "qc_plots $(readlink -f ${f})" >>  upload.txt_ ; done
-
-uniq upload.txt_ upload.txt 
-rm upload.txt_
-""",
-    desc={
-        "deseq2_output": ""
-    },
-    container=""
-)
 
 if __name__ == "__main__":
     import sys
     from jawm.utils import workflow
-    from pathlib import Path
     import glob
 
     workflows, var, args, unknown_args = jawm.utils.parse_arguments(['main','deseq2','test', "cistarget"])
