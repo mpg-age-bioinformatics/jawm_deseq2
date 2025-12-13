@@ -2068,7 +2068,7 @@ def report_files(deseq2_output) :
             "topgo":"*.topGO.* "
             },
         os.path.join( deseq2_output, "qc_plots") : { 
-            "qc_plots":"*.topGO.*"
+            "qc_plots":"*.*"
             }
         }
 
