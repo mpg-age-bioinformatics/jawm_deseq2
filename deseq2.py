@@ -666,23 +666,35 @@ if ( length(levels(geneList)) > 1) {
         D_out = merge(allRes, D_gogenes, by.x = 'GO.ID', by.y = 'goid', all.x = TRUE, sort = FALSE)
         D_out[, 'categoryName'] = GOTERM_categories[[go_cat]]
         D_out[, 'termName'] = paste(D_out[,'GO.ID'], D_out[, 'Term'], sep = '~')
-        D_out[,'percent'] = NA
+        # D_out[,'percent'] = NA
         D_out[, 'listTotals'] = length(sigGenes)
         D_out[, 'listTotals_used'] = length(sigGenes(sampleGOdata))
         D_out[, 'popTotals'] = length(allGenes(sampleGOdata))
         D_out[, 'popTotals_used'] = numGenes(sampleGOdata)
         D_out[, 'foldEnrichment'] = (D_out[,'Significant']/D_out[,'listTotals_used']) / (D_out[, 'Annotated']/D_out[, 'popTotals_used'])
-        D_out[, 'bonferroni'] = p.adjust(D_out[,'classicFisher'], method = "bonferroni")
-        D_out[, 'benjamini'] = p.adjust(D_out[,'classicFisher'], method = "BY")
-        D_out[, 'afdr'] = p.adjust(D_out[,'classicFisher'], method = "fdr")
 
+        # pull the column
+        x <- D_out[, "classicFisher"]
+
+        # coerce to character safely
+        x_chr <- as.character(x)
+
+        # parse: if it starts with "<", strip it and keep the number
+        x_num <- suppressWarnings(as.numeric(sub("^\\\s*<\\\s*", "", x_chr)))
+
+        # optional: clamp to a minimum positive value to avoid zeros/underflow issues
+        x_num <- pmax(x_num, .Machine$double.xmin, na.rm = FALSE)
+
+        D_out[, 'bonferroni'] = p.adjust(x_num, method = "bonferroni")
+        D_out[, 'benjamini'] = p.adjust(x_num, method = "BY")
+        D_out[, 'afdr'] = p.adjust(x_num, method = "fdr")
 
         ## ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-        D_out = D_out[, c('categoryName', 'termName', 'Significant', 'percent', 'classicFisher', 'geneIds',
+        D_out = D_out[, c('categoryName', 'termName', 'Significant', 'classicFisher', 'geneIds',
                             'listTotals', 'listTotals_used', 'Annotated', 'popTotals', 'popTotals_used', 
                             'Expected',  'foldEnrichment', 'bonferroni', 'benjamini', 'afdr', "gn", "gfc")]
 
-        names(D_out) <- c('categoryName', 'termName', 'listHits', 'percent', 'classicFisher', 'geneIds',
+        names(D_out) <- c('categoryName', 'termName', 'listHits', 'classicFisher', 'geneIds',
                             'listTotals', 'listTotals_used', 'popHits', 'popTotals', 'popTotals_used',
                             'Expected', 'foldEnrichment', 'bonferroni', 'benjamini', 'afdr', 'genes name', 'log2fc')
 
@@ -758,7 +770,18 @@ if ( nrow(D) == 0 ) {
 }
 
 if( "classicFisher" %in%  names(D) ){
-  D$ease <- as.numeric(as.character(D$classicFisher))
+    x <- D[, "classicFisher"]
+
+    # coerce to character safely
+    x_chr <- as.character(x)
+
+    # parse: if it starts with "<", strip it and keep the number
+    x_num <- suppressWarnings(as.numeric(sub("^\\\s*<\\\s*", "", x_chr)))
+
+    # optional: clamp to a minimum positive value to avoid zeros/underflow issues
+    x_num <- pmax(x_num, .Machine$double.xmin, na.rm = FALSE)
+
+  D$ease <- as.numeric(x_num)
 }
 
 D$ease <- as.numeric(as.character(D$ease))
@@ -768,10 +791,19 @@ D$listHits <- as.numeric(as.character(D$listHits))
 # Added for handling cellplot NA values
 # Handle log2fc properly
 D$log2fc <- gsub("inf", "Inf", as.character(D$log2fc))
-D$log2fc <- as.numeric(D$log2fc)
+
+# if( !( "classicFisher" %in%  names(D) ) ){
+# D$log2fc <- as.numeric(D$log2fc)
+# }
+
+print(1)
+print( head(D) )
 
 # Remove rows where `ease`, `foldEnrichment`, or `log2fc` are NA
 D <- D[!is.na(D$ease) & !is.na(D$foldEnrichment) & !is.na(D$log2fc), ]
+
+print(2)
+print(head(D))
 
 # If no valid data remains, exit
 if (nrow(D) == 0) {
@@ -2060,26 +2092,28 @@ def report_files(deseq2_output) :
     report_paths={}
     dic={ 
         os.path.join( deseq2_output, "annotated") : { 
-            "deseq2":"*.results.xlsx",
-            "deseq2":"masterTable_annotated.xlsx",
-            "deseq2":"significant.xlsx",
-            "david":"*DAVID*xlsx",
-            "david":"*DAVID*cellplot*pdf",
-            "rcistarget":" *.RcisTarget.*",
-            "topgo":"*.topGO.xlsx",
-            "topgo":"*.topGO.*.cellplot.pdf",
+            "deseq2":[ "*.results.xlsx", "masterTable_annotated.xlsx", "significant.xlsx"] , 
+            "david":[ "*DAVID*xlsx", "*DAVID*cellplot*pdf" ], 
+            "rcistarget": "*.RcisTarget.*",
+            "topgo":[ "*.topGO.xlsx", "*.topGO.*.cellplot.pdf" ] 
             },
-        os.path.join( deseq2_output, "qc_plots") : { 
-            "qc_plots":"*.pdf",
-            "qc_plots":"*.xlsx",
+        os.path.join( deseq2_output, "qc_plots" ) : { 
+            "qc_plots":[ "*.pdf", "*.xlsx" ],
             }
         }
 
     for path in dic :
         directory = Path( path )
         for folder in dic[path] :
-            files=[ f.resolve() for f in directory.glob( dic[path][folder] ) ]
+            pattern = dic[path][folder]
+            if isinstance( pattern, str ):
+                pattern=[ pattern ]
+            files=[  ]
+            for p in pattern :
+                files=files+[ f.resolve() for f in directory.glob( p ) ]
+            # print(str(path),"; ", str(folder),"; ", dic[path][folder] )
             if files :
+                # print("\t",",".join( [ str(f) for f in files ]))
                 if folder not in report_paths :
                     report_paths[folder]=files
                 else:
