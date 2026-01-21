@@ -2064,10 +2064,10 @@ def report_files(deseq2_output) :
             "deseq2":"masterTable_annotated.xlsx",
             "deseq2":"significant.xlsx",
             "david":"*DAVID*xlsx",
-            "david":"*DAVID*cellplot*pdf"",
+            "david":"*DAVID*cellplot*pdf",
             "rcistarget":" *.RcisTarget.*",
             "topgo":"*.topGO.xlsx",
-            "topgo":"*.topGO.*.cellplot.pdf"",
+            "topgo":"*.topGO.*.cellplot.pdf",
             },
         os.path.join( deseq2_output, "qc_plots") : { 
             "qc_plots":"*.pdf",
