@@ -2070,7 +2070,8 @@ def report_files(deseq2_output) :
             "topgo":"*.topGO.*.cellplot.pdf"",
             },
         os.path.join( deseq2_output, "qc_plots") : { 
-            "qc_plots":"*.*"
+            "qc_plots":"*.pdf",
+            "qc_plots":"*.xlsx",
             }
         }
 
