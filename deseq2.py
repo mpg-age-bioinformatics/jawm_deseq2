@@ -1518,7 +1518,7 @@ for comp1 in conditions_new:
             sig_fearures=len(tmp.loc[tmp['padj'] < 0.05,])
             df_sig.loc[comp1,comp2]=sig_fearures
         
-df_sig
+# df_sig
 
 mask = np.triu(np.ones_like(df_sig.astype(float), dtype=np.bool))
 
@@ -1771,8 +1771,6 @@ pdf.close()
     container="mpgagebioinformatics/rnaseq.python:3.8-8",
     manager_slurm={ "-c": 1, "--mem": "8GB", "-t": "4:00:00" }
 )
-
-
 
 
 
@@ -2065,7 +2063,7 @@ def report_files(deseq2_output) :
             "deseq2":"*.results.xlsx",
             "david":"*.DAVID.*",
             "rcistarget":" *.RcisTarget.*",
-            "topgo":"*.topGO.* "
+            "topgo":"*.topGO.*"
             },
         os.path.join( deseq2_output, "qc_plots") : { 
             "qc_plots":"*.*"
