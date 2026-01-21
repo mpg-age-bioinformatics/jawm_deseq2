@@ -2061,9 +2061,13 @@ def report_files(deseq2_output) :
     dic={ 
         os.path.join( deseq2_output, "annotated") : { 
             "deseq2":"*.results.xlsx",
-            "david":"*.DAVID.*",
+            "deseq2":"masterTable_annotated.xlsx",
+            "deseq2":"significant.xlsx",
+            "david":"*DAVID*xlsx",
+            "david":"*DAVID*cellplot*pdf"",
             "rcistarget":" *.RcisTarget.*",
-            "topgo":"*.topGO.*"
+            "topgo":"*.topGO.xlsx",
+            "topgo":"*.topGO.*.cellplot.pdf"",
             },
         os.path.join( deseq2_output, "qc_plots") : { 
             "qc_plots":"*.*"
@@ -2075,7 +2079,10 @@ def report_files(deseq2_output) :
         for folder in dic[path] :
             files=[ f.resolve() for f in directory.glob( dic[path][folder] ) ]
             if files :
-                report_paths[folder]=files
+                if folder not in report_paths :
+                    report_paths[folder]=files
+                else:
+                    report_paths[folder]=report_paths[folder]+files
 
     return report_paths
 
