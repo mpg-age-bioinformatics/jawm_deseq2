@@ -2,7 +2,7 @@ import jawm
 import os
 from pathlib import Path
 
-AGEPY_IMAGE="mpgagebioinformatics/agepy:7c412ae"
+AGEPY_IMAGE="mpgagebioinformatics/agepy:9acb5de"
 
 annotations=jawm.Process(
     name="annotations",

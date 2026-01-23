@@ -1,0 +1,51 @@
+- scope: process
+  name: annotations
+  container: /nexus/posix0/MAGE-flaski/service/images/jawm/agepy-9acb5de.sif
+
+- scope: process
+  name: parse_submission
+  container: /nexus/posix0/MAGE-flaski/service/images/jawm/rnaseq.python-3.8-8.sif
+
+- scope: process
+  name: tx2gene
+  container: /nexus/posix0/MAGE-flaski/service/images/jawm/rnaseq.python-3.8-8.sif
+
+- scope: process
+  name: tx2gene_proc
+  container: /nexus/posix0/MAGE-flaski/service/images/jawm/deseq2-1.38.0.sif
+
+- scope: process
+  name: deseq2
+  container: /nexus/posix0/MAGE-flaski/service/images/jawm/deseq2-1.38.0.sif
+
+- scope: process
+  name: mastertable
+  container: /nexus/posix0/MAGE-flaski/service/images/jawm/deseq2-1.38.0.sif
+
+- scope: process
+  name: annotator
+  container: /nexus/posix0/MAGE-flaski/service/images/jawm/rnaseq.python-3.8-8.sif
+
+- scope: process
+  name: david
+  container: /nexus/posix0/MAGE-flaski/service/images/jawm/rnaseq.python-3.8-8.sif
+
+- scope: process
+  name: topgo
+  container: /nexus/posix0/MAGE-flaski/service/images/jawm/topgo-2.50.0.sif
+
+- scope: process
+  name: cellplot
+  container: /nexus/posix0/MAGE-flaski/service/images/jawm/cellplot-ea2dbc4.sif
+
+- scope: process
+  name: rcistarget
+  container: /nexus/posix0/MAGE-flaski/service/images/jawm/rcistarget-1.17.0.sif
+
+- scope: process
+  name: qc_plots
+  container: /nexus/posix0/MAGE-flaski/service/images/jawm/rnaseq.python-3.8-8.sif
+
+- scope: process
+  name: string
+  container: /nexus/posix0/MAGE-flaski/service/images/jawm/rnaseq.python-3.8-8.sif
