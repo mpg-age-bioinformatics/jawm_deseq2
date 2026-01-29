@@ -435,17 +435,12 @@ openxlsx::write.xlsx(res_counts, "{{deseq2_output}}/all_results_stats.xlsx", row
 
 # Convert to data frame and keep gene IDs
 tpm_df <- as.data.frame(tpm)
-tpm_df$gene_id <- rownames(tpm_df)
+tpm_df$ensembl_gene_id <- rownames(tpm_df)
 
 # Move gene_id to first column
-tpm_df <- tpm_df[, c("gene_id", setdiff(colnames(tpm_df), "gene_id"))]
+tpm_df <- tpm_df[, c("ensembl_gene_id", setdiff(colnames(tpm_df), "ensembl_gene_id"))]
 
-# Write to Excel
-write.xlsx(
-  tpm_df,
-  file = "{{deseq2_output}}/tpm.xlsx",
-  rowNames = FALSE
-)
+write.table(tpm_df, "{{deseq2_output}}/tpm.tsv", sep = "\\t", quote = F, row.names = F)
 
 sessionInfo()
 """,
@@ -515,6 +510,11 @@ mt_ann=pd.merge(id_name,mt,on=["ensembl_gene_id"], how="right")
 mt_ann=pd.merge(mt_ann,bio_go,on=["ensembl_gene_id"],how="left")
 mt_ann.to_csv("{{deseq2_output}}/annotated/masterTable_annotated.tsv", sep="\\t",index=None)
 mt_ann.to_excel("{{deseq2_output}}/annotated/masterTable_annotated.xlsx", index=None)
+
+tpm=pd.read_csv("{{deseq2_output}}/tpm.tsv", sep="\\t")
+tpm=pd.merge(id_name,tpm,on=["ensembl_gene_id"], how="right")
+tpm.to_excel("{{deseq2_output}}/annotated/tpm.xlsx", index=None)
+
 """,
     desc={
         "gtf":"",
@@ -2109,7 +2109,7 @@ def report_files(deseq2_output) :
     report_paths={}
     dic={ 
         os.path.join( deseq2_output, "annotated") : { 
-            "deseq2":[ "*.results.xlsx", "masterTable_annotated.xlsx", "significant.xlsx"] , 
+            "deseq2":[ "*.results.xlsx", "masterTable_annotated.xlsx", "significant.xlsx", "tpm.xlsx"] , 
             "david":[ "*DAVID*xlsx", "*DAVID*cellplot*pdf" ], 
             "rcistarget": "*.RcisTarget.*",
             "topgo":[ "*.topGO.xlsx", "*.topGO.*.cellplot.pdf" ] 
