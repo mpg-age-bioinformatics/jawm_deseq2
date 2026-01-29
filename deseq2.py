@@ -366,6 +366,8 @@ files<-file.path(dir, samples, "abundance.tsv")
 names(files)<-samples
 txi <- tximport(files, type = "kallisto", txOut = TRUE)
 txi <- summarizeToGene(txi, tx2gene = tx2gene)
+tpm <- txi$abundance
+
 # model
 dds <- DESeqDataSetFromTximport(txi, sampleTable, ~ group )
 # if circRNA file is present, add circRNA counts to dds, else proceed
@@ -429,6 +431,21 @@ res_counts <- res_counts[, c("ensembl_gene_id", setdiff(colnames(res_counts), "e
 
 write.table(res_counts, "{{deseq2_output}}/all_results_stats.tsv", sep = "\\t", quote = F, row.names = F)
 openxlsx::write.xlsx(res_counts, "{{deseq2_output}}/all_results_stats.xlsx", row.names = F, col.names = TRUE)
+
+
+# Convert to data frame and keep gene IDs
+tpm_df <- as.data.frame(tpm)
+tpm_df$gene_id <- rownames(tpm_df)
+
+# Move gene_id to first column
+tpm_df <- tpm_df[, c("gene_id", setdiff(colnames(tpm_df), "gene_id"))]
+
+# Write to Excel
+write.xlsx(
+  tpm_df,
+  file = "{{deseq2_output}}/tpm.xlsx",
+  rowNames = FALSE
+)
 
 sessionInfo()
 """,
