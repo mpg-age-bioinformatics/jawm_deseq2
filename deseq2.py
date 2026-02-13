@@ -22,8 +22,12 @@ if not os.path.isfile("{{biotypes_go}}"):
     print("Contacting the BiomartServer.")
     from biomart import BiomartServer
     attributes=["ensembl_gene_id","external_gene_name","go_id","name_1006"]
-    # try:
-    biomart_host=age.get_ensembl_biomart_archive_url("{{release}}")
+    
+    if "{{biomart_host}}" :
+        biomart_host="{{biomart_host}}"
+    else:
+        biomart_host=age.get_ensembl_biomart_archive_url("{{release}}")
+        
     print(f"biomart host: {biomart_host}" )
     server = BiomartServer( biomart_host )
 
@@ -276,6 +280,7 @@ ref=stringr::str_split(ref, ".input.tsv")[[1]][[1]]
 coef=stringr::str_split("{{input_file}}", ".input.tsv")[[1]][[1]]
 
 out=paste("{{deseq2_output}}/",coef,".results.tsv", sep="")
+out_vsd=paste("{{deseq2_output}}/",coef,".vsd.counts.tsv", sep="")
 
 # filein
 sampleTable<-read.delim2("{{deseq2_output}}/{{input_file}}",sep = "\t", row.names = 1)
@@ -318,6 +323,16 @@ keep <- rowSums(counts(dds)) >= 10
 dds <- dds[keep,]
 dds <- DESeq(dds)
 res.counts<-counts(dds, normalized=TRUE)
+
+
+## save vst counts
+vsd <- vst(dds, blind = TRUE)
+vsd <- assay(vsd)
+vsd <- as.data.frame(vsd)
+vsd$ensembl_gene_id <- rownames(vsd)
+vsd <- vsd[, c("ensembl_gene_id", setdiff(colnames(vsd), "ensembl_gene_id"))]
+write.table( vsd, file = out_vsd, sep = "\\t", quote = FALSE, row.names = FALSE )
+
 
 # coef
 resLFC <- lfcShrink(dds,  coef=coef, type="apeglm")
@@ -409,6 +424,7 @@ for(f in result_tables){
   row.names(res_counts) <- res_counts[,'ensembl_gene_id']
   res_counts <- res_counts[, !duplicated(colnames(res_counts))]
 }
+
 # calculate fpkm values
 fpkm.deseq = as.data.frame(fpkm(dds))
 names(fpkm.deseq) = paste0('fpkm.', names(fpkm.deseq))
@@ -441,6 +457,25 @@ tpm_df$ensembl_gene_id <- rownames(tpm_df)
 tpm_df <- tpm_df[, c("ensembl_gene_id", setdiff(colnames(tpm_df), "ensembl_gene_id"))]
 
 write.table(tpm_df, "{{deseq2_output}}/tpm.tsv", sep = "\\t", quote = F, row.names = F)
+
+
+## save vst counts
+vsd <- vst(dds, blind = TRUE)
+vsd <- assay(vsd)
+vsd <- as.data.frame(vsd)
+vsd$ensembl_gene_id <- rownames(vsd)
+vsd <- vsd[, c("ensembl_gene_id", setdiff(colnames(vsd), "ensembl_gene_id"))]
+write.table( vsd, file = "{{deseq2_output}}/all.samples.vsd.counts.tsv", sep = "\\t", quote = FALSE, row.names = FALSE )
+
+## raw counts
+raw_counts <- counts(dds, normalized = FALSE)
+df_raw <- as.data.frame(raw_counts)
+# Add gene IDs
+df_raw$ensembl_gene_id <- rownames(df_raw)
+# Force it to be the first column
+df_raw <- df_raw[, c("ensembl_gene_id", setdiff(colnames(df_raw), "ensembl_gene_id"))]
+# Write to TSV
+write.table( df_raw, file = "{{deseq2_output}}/all.samples.raw.counts.tsv", sep = "\\t", quote = FALSE, row.names = FALSE )
 
 sessionInfo()
 """,
@@ -480,6 +515,13 @@ GTF["gene_name"]=age.retrieve_GTF_field(field="gene_name",gtf=GTF)
 id_name=GTF[["gene_id","gene_name"]].drop_duplicates()
 id_name.reset_index(inplace=True, drop=True)
 id_name.columns=["ensembl_gene_id","gene_name"]
+
+vsd_files=os.listdir("{{deseq2_output}}/")
+vsd_files=[ s for s in vsd_files if "vsd.counts.tsv" in s ]
+for f in vsd_files:
+    df=pd.read_csv("{{deseq2_output}}/"+f,sep="\\t")
+    df=pd.merge( id_name, df, on=["ensembl_gene_id"], how="right" ) # change to gene_id
+    df.to_excel( "{{deseq2_output}}/annotated/" + f.replace('.tsv', '.xlsx') , index=None )
 
 deg_files=os.listdir("{{deseq2_output}}/")
 deg_files=[ s for s in deg_files if "results.tsv" in s ]
@@ -2108,8 +2150,11 @@ rm -rf {{deseq2_output}}/annotated/string.running
 def report_files(deseq2_output) :
     report_paths={}
     dic={ 
+        deseq2_output :{
+            "deseq2": ["all.samples.raw.counts.tsv" ]
+        },
         os.path.join( deseq2_output, "annotated") : { 
-            "deseq2":[ "*.results.xlsx", "masterTable_annotated.xlsx", "significant.xlsx", "tpm.xlsx"] , 
+            "deseq2":[ "*.results.xlsx", "masterTable_annotated.xlsx", "significant.xlsx", "tpm.xlsx", "*vsd.counts.xlsx"] , 
             "david":[ "*DAVID*xlsx", "*DAVID*cellplot*pdf" ], 
             "rcistarget": "*.RcisTarget.*",
             "topgo":[ "*.topGO.xlsx", "*.topGO.*.cellplot.pdf" ] 

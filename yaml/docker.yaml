@@ -9,12 +9,13 @@
     map.kallisto_output: "./test/test-input/kallisto_output/"
     circRNA: "None"
     cytoscape_host: "/nexus/posix0/MAGE-flaski/service/databases/cytoscape/cytoscape.ip"
+    release: 114
 
 - scope: process
   name: "annotations"
   var:
     biomart_dataset: "celegans_gene_ensembl"
-    biomart_host: "http://sep2025.archive.ensembl.org/biomart/"
+    # biomart_host: "http://sep2025.archive.ensembl.org/biomart/"
     biotypes_go: "./test/test-output/biotypes_go.txt"
 
 - scope: process
