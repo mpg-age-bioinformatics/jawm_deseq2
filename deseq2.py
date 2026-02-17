@@ -104,6 +104,7 @@ else:
     var={
         "biomart_dataset": "",
         "organism":"",
+        "biomart_host":""
     },
     desc={
         "gtf":"",
