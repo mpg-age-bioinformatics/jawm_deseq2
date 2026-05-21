@@ -2234,6 +2234,10 @@ if __name__ == "__main__":
                 float_cols = df.select_dtypes(include="float").columns
                 df[float_cols] = df[float_cols].map(lambda x: float(f"{x:.6g}") if pd.notna(x) else x)
                 df.to_csv(outfile, sep="\t", index=False, float_format="%.6g", na_rep="NA")
+
+            with open( os.path.join(var["deseq2_output"], "all_results_stats.rounded.tsv"), 'r') as out:
+                print( out.readlines()[:2] + out.readlines()[-1:]  )
+
             # we can not run the remaining part of the workflow on github
             # so we stop it here
             with open( os.path.join(var["deseq2_output"], "test.txt"), 'w') as out:
