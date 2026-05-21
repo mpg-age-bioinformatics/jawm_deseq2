@@ -273,6 +273,8 @@ library(rhdf5)
 library(readr)
 library(apeglm)
 
+options(digits = 15)
+
 print("{{input_file}}.tsv")
 
 ref=stringr::str_split("{{input_file}}", "_vs_")[[1]][[2]]
@@ -373,6 +375,8 @@ library(DESeq2)
 library(rhdf5)
 library(readr)
 library(apeglm)
+
+options(digits = 15)
 
 sampleTable<-read.delim2("{{deseq2_output}}/samples_MasterTable.txt",sep = "\\t", row.names = 1)
 samples<-row.names(sampleTable)
