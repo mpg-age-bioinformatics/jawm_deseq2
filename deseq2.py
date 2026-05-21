@@ -2230,7 +2230,7 @@ if __name__ == "__main__":
             # for the test workflow we might also do something more
 
             with open( os.path.join(var["deseq2_output"], "all_results_stats.tsv"), 'r') as out:
-                print( out.readlines()[:10] )
+                print(  "".join(out.readlines()[:2] ) )
 
             print("Test completed.")
             sys.exit(0)
