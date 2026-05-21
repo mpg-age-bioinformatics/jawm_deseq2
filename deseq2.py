@@ -2218,6 +2218,16 @@ if __name__ == "__main__":
         
         mastertable.execute( deseq2_jobs )
 
+        if workflow("test", workflows):
+            # we can not run the remaining part of the workflow on github
+            # so we stop it here
+            with open( os.path.join(var["deseq2_output"], "test.txt"), 'w') as out:
+                out.write("Test completed.")
+
+            # for the test workflow we might also do something more
+            print("Test completed.")
+
+
         annotator.execute( mastertable.hash )
 
         # wait for annotator to complete before listing input files and starting david
@@ -2286,10 +2296,4 @@ if __name__ == "__main__":
 
     jawm.Process.wait()
 
-    if workflow("test", workflows):
 
-        with open(os.path.join(var["deseq2_output"], "test.txt"), 'w') as out:
-            out.write("Test completed.")
-
-        # for the test workflow we might also do something more
-        print("Test completed.")
