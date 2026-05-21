@@ -273,8 +273,6 @@ library(rhdf5)
 library(readr)
 library(apeglm)
 
-options(digits = 15)
-
 print("{{input_file}}.tsv")
 
 ref=stringr::str_split("{{input_file}}", "_vs_")[[1]][[2]]
@@ -375,8 +373,6 @@ library(DESeq2)
 library(rhdf5)
 library(readr)
 library(apeglm)
-
-options(digits = 15)
 
 sampleTable<-read.delim2("{{deseq2_output}}/samples_MasterTable.txt",sep = "\\t", row.names = 1)
 samples<-row.names(sampleTable)
@@ -2226,18 +2222,25 @@ if __name__ == "__main__":
         
         mastertable.execute( deseq2_jobs )
 
+        ########### TEST
         if workflow("test", workflows):
+            import pandas as pd
+            # for the test workflow we might also do something more
+            with open( os.path.join(var["deseq2_output"], "all_results_stats.tsv"), 'r') as out:
+                infile = os.path.join(var["deseq2_output"], "all_results_stats.tsv")
+                outfile = os.path.join(var["deseq2_output"], "all_results_stats.rounded.tsv")
+                df = pd.read_csv(infile, sep="\t")
+                # Round all float columns to 6 significant digits
+                float_cols = df.select_dtypes(include="float").columns
+                df[float_cols] = df[float_cols].map(lambda x: float(f"{x:.6g}") if pd.notna(x) else x)
+                df.to_csv(outfile, sep="\t", index=False, float_format="%.6g", na_rep="NA")
             # we can not run the remaining part of the workflow on github
             # so we stop it here
             with open( os.path.join(var["deseq2_output"], "test.txt"), 'w') as out:
                 out.write("Test completed.")
-            # for the test workflow we might also do something more
-
-            with open( os.path.join(var["deseq2_output"], "all_results_stats.tsv"), 'r') as out:
-                print(  "".join( out.readlines()[:2]+out.readlines()[-1:] ) )
-
             print("Test completed.")
             sys.exit(0)
+        ########### TEST 
 
         annotator.execute( mastertable.hash )
 
