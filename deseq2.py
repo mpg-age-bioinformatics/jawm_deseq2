@@ -2195,7 +2195,11 @@ if __name__ == "__main__":
     if workflow(["main","deseq2","test","cistarget"], workflows):
 
         tx2gene.execute( )
-        annotations.execute()
+
+        if not workflow("test", workflows):
+            # we can not run the biomart on github
+            annotations.execute()
+
         parse_submission.execute()
         tx2gene_proc.execute(tx2gene.hash)
 
@@ -2223,10 +2227,9 @@ if __name__ == "__main__":
             # so we stop it here
             with open( os.path.join(var["deseq2_output"], "test.txt"), 'w') as out:
                 out.write("Test completed.")
-
             # for the test workflow we might also do something more
             print("Test completed.")
-
+            sys.exit(0)
 
         annotator.execute( mastertable.hash )
 
