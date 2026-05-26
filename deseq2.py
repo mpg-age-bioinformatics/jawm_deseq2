@@ -2225,14 +2225,17 @@ if __name__ == "__main__":
         ########### TEST
         if workflow("test", workflows):
             import pandas as pd
+			import math
             # for the test workflow we might also do something more
             with open( os.path.join(var["deseq2_output"], "all_results_stats.tsv"), 'r') as out:
                 infile = os.path.join(var["deseq2_output"], "all_results_stats.tsv")
                 outfile = os.path.join(var["deseq2_output"], "all_results_stats.rounded.tsv")
                 df = pd.read_csv(infile, sep="\t")
-                # Round all float columns to 6 significant digits
+                # Truncate all float columns to 6 decimal places instead of round to ensure same output in different system based calculation
                 float_cols = df.select_dtypes(include="float").columns
-                df[float_cols] = df[float_cols].map(lambda x: float(f"{x:.6f}") if pd.notna(x) else x)
+                df[float_cols] = df[float_cols].map(
+                    lambda x: math.trunc(x * 1_000_000) / 1_000_000 if pd.notna(x) else x
+                )
                 df.to_csv(outfile, sep="\t", index=False, float_format="%.6f", na_rep="NA")
 
             with open( os.path.join(var["deseq2_output"], "all_results_stats.rounded.tsv"), 'r') as out:
