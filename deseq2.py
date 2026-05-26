@@ -2236,7 +2236,7 @@ if __name__ == "__main__":
                 df.to_csv(outfile, sep="\t", index=False, float_format="%.6g", na_rep="NA")
 
             with open( os.path.join(var["deseq2_output"], "all_results_stats.rounded.tsv"), 'r') as out:
-                print( out.readlines()[:2] + out.readlines()[-1:]  )
+                print( "".join(out.readlines()[:2] + out.readlines()[-1:])  )
 
             # we can not run the remaining part of the workflow on github
             # so we stop it here
