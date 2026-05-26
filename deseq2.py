@@ -2225,7 +2225,7 @@ if __name__ == "__main__":
         ########### TEST
         if workflow("test", workflows):
             import pandas as pd
-		    import math
+            import math
             # for the test workflow we might also do something more
             with open( os.path.join(var["deseq2_output"], "all_results_stats.tsv"), 'r') as out:
                 infile = os.path.join(var["deseq2_output"], "all_results_stats.tsv")
