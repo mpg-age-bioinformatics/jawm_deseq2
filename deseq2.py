@@ -2184,6 +2184,26 @@ def report_files(deseq2_output) :
 
     return report_paths
 
+def round_master_table(var):
+
+    import pandas as pd
+    import math
+    # for the test workflow we might also do something more
+    with open( os.path.join(var["deseq2_output"], "all_results_stats.tsv"), 'r') as out:
+        infile = os.path.join(var["deseq2_output"], "all_results_stats.tsv")
+        outfile = os.path.join(var["deseq2_output"], "all_results_stats.rounded.tsv")
+        df = pd.read_csv(infile, sep="\t")
+        # Truncate all float columns to 4 decimal places instead of round to ensure same output in different system based calculation
+        float_cols = df.select_dtypes(include="float").columns
+        df[float_cols] = df[float_cols].map(
+            lambda x: math.trunc(x * 10_000) / 10_000 if pd.notna(x) else x
+        )
+        df.to_csv(outfile, sep="\t", index=False, float_format="%.4f", na_rep="NA")
+
+    # with open( os.path.join(var["deseq2_output"], "all_results_stats.rounded.tsv"), 'r') as out:
+    #     lines = out.readlines()
+    #     print("".join(lines[:5] + lines[-5:]))
+
 
 if __name__ == "__main__":
     import sys
@@ -2224,24 +2244,7 @@ if __name__ == "__main__":
 
         ########### TEST
         if workflow("test", workflows):
-            import pandas as pd
-            import math
-            # for the test workflow we might also do something more
-            with open( os.path.join(var["deseq2_output"], "all_results_stats.tsv"), 'r') as out:
-                infile = os.path.join(var["deseq2_output"], "all_results_stats.tsv")
-                outfile = os.path.join(var["deseq2_output"], "all_results_stats.rounded.tsv")
-                df = pd.read_csv(infile, sep="\t")
-                # Truncate all float columns to 4 decimal places instead of round to ensure same output in different system based calculation
-                float_cols = df.select_dtypes(include="float").columns
-                df[float_cols] = df[float_cols].map(
-                    lambda x: math.trunc(x * 10_000) / 10_000 if pd.notna(x) else x
-                )
-                df.to_csv(outfile, sep="\t", index=False, float_format="%.4f", na_rep="NA")
-
-            with open( os.path.join(var["deseq2_output"], "all_results_stats.rounded.tsv"), 'r') as out:
-                lines = out.readlines()
-                print("".join(lines[:5] + lines[-5:]))
-
+            round_master_table(var)
             # we can not run the remaining part of the workflow on github
             # so we stop it here
             with open( os.path.join(var["deseq2_output"], "test.txt"), 'w') as out:
