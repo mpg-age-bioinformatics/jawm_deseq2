@@ -7,12 +7,14 @@ on:
   pull_request:
     branches: ["main"]
   schedule:
-  #   # GitHub cron is UTC. 06:00 Berlin = 04:00 UTC in summer, 05:00 UTC in winter.
-  #   - cron: "30 4 * * *"
+      #   # GitHub cron is UTC. 06:00 Berlin = 04:00 UTC in summer, 05:00 UTC in winter.
+      #   - cron: "30 4 * * *"
       # run every Monday at app. 6 AM
       - cron: "30 4 * * 1"
 
 jobs:
   build:
     uses: mpg-age-bioinformatics/jawm/.github/workflows/modules.webhook.yaml@main
+    with:
+      runner: self-hosted
     secrets: inherit

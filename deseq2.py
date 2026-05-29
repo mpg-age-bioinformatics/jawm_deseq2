@@ -2247,10 +2247,10 @@ if __name__ == "__main__":
             round_master_table(var)
             # we can not run the remaining part of the workflow on github
             # so we stop it here
-            with open( os.path.join(var["deseq2_output"], "test.txt"), 'w') as out:
-                out.write("Test completed.")
-            print("Test completed.")
-            sys.exit(0)
+            # with open( os.path.join(var["deseq2_output"], "test.txt"), 'w') as out:
+            #     out.write("Test completed.")
+            # print("Test completed.")
+            # sys.exit(0)
         ########### TEST 
 
         annotator.execute( mastertable.hash )
