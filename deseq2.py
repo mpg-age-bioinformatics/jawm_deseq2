@@ -11,6 +11,7 @@ annotations=jawm.Process(
 #!/usr/local/bin/python
 import pandas as pd
 import os
+import sys
 import AGEpy as age
 import shutil
 
@@ -94,6 +95,8 @@ if not os.path.isfile("{{biotypes_go}}"):
 
     bio_go=bio_go.sort_values(by=["ensembl_gene_id"],ascending=True)
     bio_go.to_csv("{{deseq2_output}}/annotated/biotypes_go.txt", sep= "\\t", index=None)
+    # print("Saving {{biotypes_go}}")
+    # sys.stdout.flush()
     bio_go.to_csv("{{biotypes_go}}", sep= "\\t", index=None)     
 
 else:
@@ -2216,9 +2219,7 @@ if __name__ == "__main__":
 
         tx2gene.execute( )
 
-        if not workflow("test", workflows):
-            # we can not run the biomart on github
-            annotations.execute()
+        annotations.execute()
 
         parse_submission.execute()
         tx2gene_proc.execute(tx2gene.hash)
@@ -2241,17 +2242,6 @@ if __name__ == "__main__":
             deseq2_jobs.append( deseq2_.hash )
         
         mastertable.execute( deseq2_jobs )
-
-        ########### TEST
-        if workflow("test", workflows):
-            round_master_table(var)
-            # we can not run the remaining part of the workflow on github
-            # so we stop it here
-            # with open( os.path.join(var["deseq2_output"], "test.txt"), 'w') as out:
-            #     out.write("Test completed.")
-            # print("Test completed.")
-            # sys.exit(0)
-        ########### TEST 
 
         annotator.execute( mastertable.hash )
 
@@ -2318,6 +2308,9 @@ if __name__ == "__main__":
             rcistarget_.var["input_file"]=os.path.basename(file)
             rcistarget_.execute( )
             rcistarget_jobs.append( rcistarget_.hash )
+
+    if workflow("test", workflows):
+        round_master_table(var)
 
     jawm.Process.wait()
 
