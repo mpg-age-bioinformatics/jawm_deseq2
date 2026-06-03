@@ -2190,7 +2190,7 @@ def report_files(deseq2_output) :
 def round_master_table(var):
     """
     For hashing we need to round the results of the all_results_stats.tsv as runs in different machines
-    lead to slightly different numbers on the 6 decimal case ()
+    lead to slightly different numbers on the 6 decimal case.
     """
 
     import pandas as pd
@@ -2251,8 +2251,8 @@ if __name__ == "__main__":
 
         david.execute( )
 
-        base = os.path.join(deseq2.var["deseq2_output"], "annotated")
-        tests_results = glob.glob(os.path.join(base, "*results.tsv"))
+        base = os.path.join( deseq2.var["deseq2_output"], "annotated" )
+        tests_results = glob.glob( os.path.join(base, "*results.tsv") )
         topgo_jobs=[]
         for file in tests_results:
             topgo_=topgo.clone()
