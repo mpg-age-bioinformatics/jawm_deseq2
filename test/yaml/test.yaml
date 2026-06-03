@@ -11,7 +11,7 @@
   name: "annotations"
   var:
     biomart_dataset: "celegans_gene_ensembl"
-    biomart_host: "http://sep2025.archive.ensembl.org/biomart/"
+    biomart_host: "http://may2025.archive.ensembl.org/biomart/"
     biotypes_go: "./test/test-output/biotypes_go.txt"
 - scope: process
   name: "parse_submission"
@@ -35,7 +35,7 @@
 - scope: process
   name: "string"
   var:
-    biomart_host: "http://sep2025.archive.ensembl.org/biomart/"
+    biomart_host: "http://may2025.archive.ensembl.org/biomart/" # for testing purposes only as currently sep2025 / release 115 is down
     species: "caenorhabditis elegans"
 
 - scope: hash

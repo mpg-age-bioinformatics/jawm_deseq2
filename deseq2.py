@@ -2188,6 +2188,10 @@ def report_files(deseq2_output) :
     return report_paths
 
 def round_master_table(var):
+    """
+    For hashing we need to round the results of the all_results_stats.tsv as runs in different machines
+    lead to slightly different numbers on the 6 decimal case ()
+    """
 
     import pandas as pd
     import math
@@ -2202,10 +2206,6 @@ def round_master_table(var):
             lambda x: math.trunc(x * 10_000) / 10_000 if pd.notna(x) else x
         )
         df.to_csv(outfile, sep="\t", index=False, float_format="%.4f", na_rep="NA")
-
-    # with open( os.path.join(var["deseq2_output"], "all_results_stats.rounded.tsv"), 'r') as out:
-    #     lines = out.readlines()
-    #     print("".join(lines[:5] + lines[-5:]))
 
 
 if __name__ == "__main__":
@@ -2309,9 +2309,9 @@ if __name__ == "__main__":
             rcistarget_.execute( )
             rcistarget_jobs.append( rcistarget_.hash )
 
+    jawm.Process.wait( abort=True )
+
     if workflow("test", workflows):
         round_master_table(var)
-
-    jawm.Process.wait()
 
 
