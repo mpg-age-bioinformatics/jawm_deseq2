@@ -1,7 +1,6 @@
 - scope: global
   environment: "docker"
   parallel: false
-  docker_run_as_user: true
   var:
     map.gtf: "./test/test-input/caenorhabditis_elegans.115.no.rRNA.gtf"
     mk.deseq2_output: "./test/test-output/deseq2_output/"
