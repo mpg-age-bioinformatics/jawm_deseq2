@@ -12,15 +12,15 @@
 
 - scope: process
   name: tx2gene_proc
-  container: /nexus/posix0/MAGE-flaski/service/images/jawm/deseq2-1.38.0.sif
+  container: /nexus/posix0/MAGE-flaski/service/images/jawm/deseq2-1.38.0-1.sif
 
 - scope: process
   name: deseq2
-  container: /nexus/posix0/MAGE-flaski/service/images/jawm/deseq2-1.38.0.sif
+  container: /nexus/posix0/MAGE-flaski/service/images/jawm/deseq2-1.38.0-1.sif
 
 - scope: process
   name: mastertable
-  container: /nexus/posix0/MAGE-flaski/service/images/jawm/deseq2-1.38.0.sif
+  container: /nexus/posix0/MAGE-flaski/service/images/jawm/deseq2-1.38.0-1.sif
 
 - scope: process
   name: annotator
@@ -32,7 +32,7 @@
 
 - scope: process
   name: topgo
-  container: /nexus/posix0/MAGE-flaski/service/images/jawm/topgo-2.50.0.sif
+  container: /nexus/posix0/MAGE-flaski/service/images/jawm/topgo-2.50.0-1.sif
 
 - scope: process
   name: cellplot
