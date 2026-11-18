@@ -259,7 +259,7 @@ sessionInfo()
     desc={
         "project_folder":""
     },
-    container="mpgagebioinformatics/deseq2:1.38.0",
+    container="mpgagebioinformatics/deseq2:1.38.0-1",
     manager_slurm={ "-c": 1, "--mem": "10GB", "-t": "1:00:00" }
 )
 
@@ -359,7 +359,7 @@ sessionInfo()
         "kallisto_output":"",
         "circRNA": ""
     },
-    container="mpgagebioinformatics/deseq2:1.38.0",
+    container="mpgagebioinformatics/deseq2:1.38.0-1",
     manager_slurm={ "-c": 20, "--mem": "20GB", "-t": "1:00:00" }
 )
 
@@ -491,7 +491,7 @@ sessionInfo()
         "deseq2_output":"",
         "kallisto_output":"",
     },
-    container="mpgagebioinformatics/deseq2:1.38.0",
+    container="mpgagebioinformatics/deseq2:1.38.0-1",
     manager_slurm={ "-c": 8, "--mem": "40GB", "-t": "4:00:00" }
 )
 
@@ -775,7 +775,7 @@ if ( length(levels(geneList)) > 1) {
         "deseq2_output":"",
         "input_file":"",
     },
-    container="mpgagebioinformatics/topgo:2.50.0",
+    container="mpgagebioinformatics/topgo:2.50.0-1",
     manager_slurm={ "-c": 1, "--mem": "8GB", "-t": "4:00:00" }
 )
 
